@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAppStore } from "@/stores/app-store";
 import type { Skill, SkillCategory } from "@/types";
@@ -24,7 +24,12 @@ const categories: Array<{ label: string; value: SkillCategory | "all" }> = [
 
 export default function SkillsPage() {
   const organization = useAppStore((s) => s.organization);
+  const fetchOrganization = useAppStore((s) => s.fetchOrganization);
   const [filter, setFilter] = useState<SkillCategory | "all">("all");
+
+  useEffect(() => {
+    fetchOrganization();
+  }, [fetchOrganization]);
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
 
   // Collect all unique skills with their agents and departments

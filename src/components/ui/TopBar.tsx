@@ -7,6 +7,9 @@ import { formatCurrency, cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "/", label: "Map" },
+  { href: "/graph", label: "Graph" },
+  { href: "/agents", label: "Agents" },
+  { href: "/departments", label: "Departments" },
   { href: "/cost", label: "Cost" },
   { href: "/skills", label: "Skills" },
 ] as const;

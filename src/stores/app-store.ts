@@ -8,12 +8,14 @@ interface AppState {
   selectedAgentId: string | null;
   viewMode: "map" | "cost" | "skills";
   zoomLevel: number;
+  isLoaded: boolean;
   // Actions
   selectDepartment: (id: string | null) => void;
   selectAgent: (id: string | null) => void;
   setViewMode: (mode: "map" | "cost" | "skills") => void;
   setZoomLevel: (level: number) => void;
   clearSelection: () => void;
+  fetchOrganization: () => Promise<void>;
   // Computed helpers
   getSelectedDepartment: () => Department | null;
   getSelectedAgent: () => Agent | null;
@@ -27,6 +29,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedAgentId: null,
   viewMode: "map",
   zoomLevel: 1,
+  isLoaded: false,
 
   selectDepartment: (id) =>
     set({ selectedDepartmentId: id, selectedAgentId: null }),
@@ -40,6 +43,19 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   clearSelection: () =>
     set({ selectedDepartmentId: null, selectedAgentId: null }),
+
+  fetchOrganization: async () => {
+    try {
+      const res = await fetch("/api/organization");
+      if (res.ok) {
+        const data: Organization = await res.json();
+        set({ organization: data, isLoaded: true });
+      }
+    } catch {
+      // Fall back to mock data on error
+      console.warn("Failed to fetch organization from API, using mock data");
+    }
+  },
 
   getSelectedDepartment: () => {
     const { organization, selectedDepartmentId } = get();

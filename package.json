@@ -6,11 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:push": "drizzle-kit push",
+    "db:seed": "npx tsx src/db/seed.ts",
+    "agent-hub-setup": "npx tsx src/cli/agent-hub-setup.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^10.3.0",
     "@pixi/react": "^8.0.5",
+    "@xyflow/react": "^12.10.0",
+    "better-sqlite3": "^12.6.2",
+    "drizzle-orm": "^0.45.1",
     "next": "16.1.6",
     "pixi-viewport": "^6.0.3",
     "pixi.js": "^8.16.0",
@@ -19,14 +25,25 @@
     "recharts": "^3.7.0",
     "zustand": "^5.0.11"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild",
+      "sharp",
+      "unrs-resolver"
+    ]
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.9",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

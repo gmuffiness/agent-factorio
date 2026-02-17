@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import {
   BarChart,
@@ -18,6 +19,11 @@ import type { MonthlyCost, Vendor } from "@/types";
 
 export default function CostPage() {
   const organization = useAppStore((s) => s.organization);
+  const fetchOrganization = useAppStore((s) => s.fetchOrganization);
+
+  useEffect(() => {
+    fetchOrganization();
+  }, [fetchOrganization]);
   const getTotalMonthlyCost = useAppStore((s) => s.getTotalMonthlyCost);
   const getVendorCostBreakdown = useAppStore((s) => s.getVendorCostBreakdown);
 
