@@ -14,82 +14,132 @@ export function createDepartmentRoom(
 
   const overBudget = department.monthlySpend > department.budget;
   const vendorColor = getVendorColor(department.primaryVendor);
-  const bgColor = getVendorBgColor(department.primaryVendor);
   const borderColor = overBudget ? "#EF4444" : vendorColor;
+  const borderHex = overBudget ? 0xEF4444 : parseInt(vendorColor.replace("#", ""), 16);
 
-  // Room shadow
-  const shadow = new Graphics();
-  shadow.roundRect(3, 3, width, height, 12);
-  shadow.fill({ color: "#000000", alpha: 0.06 });
-  container.addChild(shadow);
+  // === Outer wall (thick border for 3D game effect) ===
+  const outerWall = new Graphics();
+  outerWall.roundRect(0, 0, width, height, 10);
+  outerWall.fill({ color: borderHex, alpha: overBudget ? 0.5 : 0.35 });
+  container.addChild(outerWall);
 
-  // Room background
-  const bg = new Graphics();
-  bg.roundRect(0, 0, width, height, 12);
-  bg.fill(bgColor);
-  bg.stroke({ color: borderColor, width: overBudget ? 3 : 2, alpha: overBudget ? 1 : 0.6 });
-  container.addChild(bg);
+  // Wall shadow (bottom-right 3D effect)
+  const wallShadow = new Graphics();
+  wallShadow.roundRect(4, 4, width, height, 10);
+  wallShadow.fill({ color: 0x000000, alpha: 0.12 });
+  container.addChildAt(wallShadow, 0);
 
-  // Header bar
-  const headerHeight = 36;
-  const header = new Graphics();
-  header.roundRect(0, 0, width, headerHeight, 12);
-  header.fill({ color: vendorColor, alpha: 0.15 });
-  // Flat bottom edge for header
-  header.rect(0, headerHeight - 12, width, 12);
-  header.fill({ color: vendorColor, alpha: 0.15 });
-  container.addChild(header);
+  // === Floor (inside room) ===
+  const floorInset = 5;
+  const floorX = floorInset;
+  const floorY = floorInset;
+  const floorW = width - floorInset * 2;
+  const floorH = height - floorInset * 2;
 
-  // Divider line under header
+  const floor = new Graphics();
+  floor.roundRect(floorX, floorY, floorW, floorH, 6);
+  floor.fill({ color: 0xF8FAFC });
+  container.addChild(floor);
+
+  // === Tile grid pattern on floor ===
+  const tileSize = 24;
+  const tileGraphics = new Graphics();
+  for (let tx = floorX; tx < floorX + floorW; tx += tileSize) {
+    for (let ty = floorY; ty < floorY + floorH; ty += tileSize) {
+      const tw = Math.min(tileSize, floorX + floorW - tx);
+      const th = Math.min(tileSize, floorY + floorH - ty);
+      tileGraphics.rect(tx, ty, tw, th);
+      tileGraphics.stroke({ color: borderHex, width: 0.5, alpha: 0.12 });
+    }
+  }
+  // Vendor-tinted alternate tiles (checkerboard style)
+  let altRow = false;
+  for (let tx = floorX; tx < floorX + floorW; tx += tileSize) {
+    altRow = !altRow;
+    let altCol = altRow;
+    for (let ty = floorY; ty < floorY + floorH; ty += tileSize) {
+      altCol = !altCol;
+      if (altCol) {
+        const tw = Math.min(tileSize, floorX + floorW - tx);
+        const th = Math.min(tileSize, floorY + floorH - ty);
+        tileGraphics.roundRect(tx + 1, ty + 1, tw - 2, th - 2, 1);
+        tileGraphics.fill({ color: borderHex, alpha: 0.04 });
+      }
+    }
+  }
+  container.addChild(tileGraphics);
+
+  // === Room sign / header (like a sign above the room entrance) ===
+  const headerH = 32;
+  const headerBg = new Graphics();
+  headerBg.roundRect(floorX, floorY, floorW, headerH, 6);
+  headerBg.fill({ color: borderHex, alpha: overBudget ? 0.2 : 0.12 });
+  container.addChild(headerBg);
+
+  // Header divider line
   const divider = new Graphics();
-  divider.moveTo(8, headerHeight);
-  divider.lineTo(width - 8, headerHeight);
-  divider.stroke({ color: vendorColor, width: 1, alpha: 0.2 });
+  divider.rect(floorX + 4, floorY + headerH - 1, floorW - 8, 1);
+  divider.fill({ color: borderHex, alpha: 0.2 });
   container.addChild(divider);
 
-  // Department name
+  // Department name (sign style)
   const nameText = new Text({
-    text: department.name,
+    text: `🏢 ${department.name}`,
     style: {
       fontFamily: "Inter, Arial, sans-serif",
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: "700",
       fill: "#1E293B",
     },
   });
-  nameText.x = 12;
-  nameText.y = 10;
+  nameText.x = floorX + 8;
+  nameText.y = floorY + 8;
   container.addChild(nameText);
 
-  // Vendor badge in header
+  // Vendor badge
   const vendorBadge = new Text({
     text: getVendorLabel(department.primaryVendor),
     style: {
       fontFamily: "Inter, Arial, sans-serif",
       fontSize: 9,
-      fontWeight: "600",
+      fontWeight: "700",
       fill: vendorColor,
     },
   });
-  vendorBadge.x = width - 12 - vendorBadge.width;
-  vendorBadge.y = 13;
+  vendorBadge.x = floorX + floorW - vendorBadge.width - 8;
+  vendorBadge.y = floorY + 11;
   container.addChild(vendorBadge);
 
-  // Agent count badge
+  // === Footer stats area ===
+  const footerH = 44;
+  const footerY = floorY + floorH - footerH;
+
+  const footerBg = new Graphics();
+  footerBg.roundRect(floorX, footerY, floorW, footerH, 6);
+  footerBg.fill({ color: 0x000000, alpha: 0.04 });
+  container.addChild(footerBg);
+
+  // Footer divider
+  const footerDivider = new Graphics();
+  footerDivider.rect(floorX + 4, footerY, floorW - 8, 1);
+  footerDivider.fill({ color: 0x000000, alpha: 0.08 });
+  container.addChild(footerDivider);
+
+  // Agent count
   const agentCount = department.agents.length;
   const countText = new Text({
-    text: `${agentCount} agent${agentCount !== 1 ? "s" : ""}`,
+    text: `👾 ${agentCount} agent${agentCount !== 1 ? "s" : ""}`,
     style: {
       fontFamily: "Inter, Arial, sans-serif",
-      fontSize: 10,
+      fontSize: 9,
       fill: "#64748B",
     },
   });
-  countText.x = 12;
-  countText.y = height - 42;
+  countText.x = floorX + 8;
+  countText.y = footerY + 6;
   container.addChild(countText);
 
-  // Cost display in footer
+  // Cost
   const costText = new Text({
     text: formatCurrency(department.monthlySpend),
     style: {
@@ -99,71 +149,70 @@ export function createDepartmentRoom(
       fill: overBudget ? "#EF4444" : "#1E293B",
     },
   });
-  costText.x = 12;
-  costText.y = height - 26;
+  costText.x = floorX + 8;
+  costText.y = footerY + 20;
   container.addChild(costText);
 
-  // Budget text
   const budgetText = new Text({
     text: `/ ${formatCurrency(department.budget)}`,
     style: {
       fontFamily: "Inter, Arial, sans-serif",
-      fontSize: 10,
+      fontSize: 9,
       fill: "#94A3B8",
     },
   });
   budgetText.x = costText.x + costText.width + 4;
-  budgetText.y = height - 22;
+  budgetText.y = footerY + 24;
   container.addChild(budgetText);
 
-  // Budget progress bar
-  const barWidth = width - 24;
-  const barHeight = 3;
-  const barY = height - 48;
+  // === Budget bar ===
+  const barW = floorW - 16;
+  const barH = 4;
+  const barY = footerY - 8;
+
   const barBg = new Graphics();
-  barBg.roundRect(12, barY, barWidth, barHeight, 2);
-  barBg.fill({ color: "#000000", alpha: 0.06 });
+  barBg.roundRect(floorX + 8, barY, barW, barH, 2);
+  barBg.fill({ color: 0x000000, alpha: 0.08 });
   container.addChild(barBg);
 
-  const usageRatio = Math.min(1, department.monthlySpend / department.budget);
+  const ratio = Math.min(1, department.monthlySpend / department.budget);
   const barFill = new Graphics();
-  barFill.roundRect(12, barY, barWidth * usageRatio, barHeight, 2);
-  barFill.fill(overBudget ? "#EF4444" : vendorColor);
+  barFill.roundRect(floorX + 8, barY, barW * ratio, barH, 2);
+  barFill.fill({ color: overBudget ? 0xEF4444 : borderHex });
   container.addChild(barFill);
 
-  // Vendor distribution dots (small colored dots showing agent vendor mix)
-  const vendorCounts = { anthropic: 0, openai: 0, google: 0 };
-  for (const agent of department.agents) {
-    vendorCounts[agent.vendor]++;
-  }
-  let dotX = width - 12;
-  const dotY = height - 22;
+  // === Vendor dots (top right of footer) ===
+  const vendorCounts: Record<string, number> = { anthropic: 0, openai: 0, google: 0 };
+  for (const agent of department.agents) vendorCounts[agent.vendor]++;
+  let dotX = floorX + floorW - 8;
+  const dotY = footerY + 28;
   for (const [vendor, count] of Object.entries(vendorCounts).reverse()) {
     if (count === 0) continue;
     for (let i = 0; i < count; i++) {
       dotX -= 10;
       const dot = new Graphics();
-      dot.circle(dotX, dotY, 3.5);
-      dot.fill(getVendorColor(vendor as "anthropic" | "openai" | "google"));
+      dot.circle(dotX, dotY, 4);
+      dot.fill({ color: getVendorColor(vendor as "anthropic" | "openai" | "google") });
+      dot.stroke({ color: 0xFFFFFF, width: 1 });
       container.addChild(dot);
     }
   }
 
-  // Make interactive
-  bg.eventMode = "static";
-  bg.cursor = "pointer";
+  // === Interaction ===
+  const hitArea = new Graphics();
+  hitArea.rect(0, 0, width, height);
+  hitArea.fill({ color: 0x000000, alpha: 0 });
+  hitArea.eventMode = "static";
+  hitArea.cursor = "pointer";
+  container.addChild(hitArea);
 
-  // Distinguish single-click (open drawer) from double-click (zoom)
-  let clickTimer: ReturnType<typeof setTimeout> | null = null;
   let lastTap = 0;
+  let clickTimer: ReturnType<typeof setTimeout> | null = null;
 
-  bg.on("pointerdown", () => {
+  hitArea.on("pointerdown", () => {
     const now = Date.now();
     if (onDoubleClick && now - lastTap < 350) {
-      if (clickTimer) {
-        clearTimeout(clickTimer);
-        clickTimer = null;
-      }
+      if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
       onDoubleClick(department);
     } else {
       clickTimer = setTimeout(() => {

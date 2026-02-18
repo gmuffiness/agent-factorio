@@ -30,7 +30,7 @@ export default function SpatialCanvas() {
 
     (async () => {
       await app.init({
-        background: "#F9FAFB",
+        background: "#E8F0E8",
         width: div.clientWidth,
         height: div.clientHeight,
         antialias: true,
