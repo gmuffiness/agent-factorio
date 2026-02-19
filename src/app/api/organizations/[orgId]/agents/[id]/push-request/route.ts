@@ -21,7 +21,7 @@ export async function GET(
   // Find the most recent [push-request] announcement targeting this agent
   const { data: announcement } = await supabase
     .from("announcements")
-    .select("id, created_at")
+    .select("id, created_at, expires_at")
     .eq("org_id", orgId)
     .eq("title", "[push-request]")
     .eq("target_type", "agent")
@@ -31,6 +31,11 @@ export async function GET(
     .maybeSingle();
 
   if (!announcement) {
+    return NextResponse.json({ status: "none" });
+  }
+
+  // Treat expired announcements as "none"
+  if (announcement.expires_at && announcement.expires_at < new Date().toISOString()) {
     return NextResponse.json({ status: "none" });
   }
 
@@ -96,7 +101,8 @@ export async function POST(
   const message = body.message ?? "Please run agentfloor push to sync your latest configuration.";
 
   const id = `ann-push-${Date.now()}`;
-  const now = new Date().toISOString();
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 10 * 60 * 1000); // 10 minutes
 
   const { error } = await supabase.from("announcements").insert({
     id,
@@ -107,8 +113,8 @@ export async function POST(
     target_id: agentId,
     priority: "urgent",
     created_by: adminCheck.user.id,
-    created_at: now,
-    expires_at: null,
+    created_at: now.toISOString(),
+    expires_at: expiresAt.toISOString(),
   });
 
   if (error) {
