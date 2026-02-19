@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabase } from "@/db/supabase";
+import { getSupabase, getSupabaseAuth } from "@/db/supabase";
+import { randomUUID } from "crypto";
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -12,14 +13,125 @@ function generateInviteCode(): string {
 
 /**
  * POST /api/cli/login
- * CLI-only login endpoint — no Supabase Auth required.
- * Supports two actions:
- *   - { action: "join", inviteCode, email, memberName? } — join existing org via invite code
- *   - { action: "create", orgName, email, memberName? } — create new org
+ * CLI login endpoint with email verification via Supabase Auth magic link.
+ * Actions:
+ *   - { action: "send-verification", email } — send magic link email, return loginToken
+ *   - { action: "check-verification", loginToken } — poll verification status
+ *   - { action: "join", inviteCode, email, userId, memberName? } — join existing org
+ *   - { action: "create", orgName, email, userId, memberName? } — create new org
  */
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { action, inviteCode, orgName, memberName, email } = body;
+  const { action } = body;
+
+  const supabase = getSupabase();
+
+  // --- Send verification email ---
+  if (action === "send-verification") {
+    const { email } = body;
+    if (!email) {
+      return NextResponse.json(
+        { error: "email is required" },
+        { status: 400 },
+      );
+    }
+
+    const loginToken = randomUUID();
+
+    // Store pending session
+    const { error: insertError } = await supabase
+      .from("cli_login_sessions")
+      .insert({ token: loginToken, email });
+
+    if (insertError) {
+      return NextResponse.json(
+        { error: "Failed to create login session" },
+        { status: 500 },
+      );
+    }
+
+    // Send magic link via Supabase Auth
+    const hubUrl = request.nextUrl.origin;
+    const redirectTo = `${hubUrl}/cli/verify?loginToken=${loginToken}`;
+
+    const authClient = getSupabaseAuth();
+    const { error: otpError } = await authClient.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: redirectTo,
+      },
+    });
+
+    if (otpError) {
+      // Clean up the session on failure
+      await supabase
+        .from("cli_login_sessions")
+        .delete()
+        .eq("token", loginToken);
+      return NextResponse.json(
+        { error: `Failed to send verification email: ${otpError.message}` },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ loginToken, message: "Verification email sent" });
+  }
+
+  // --- Check verification status (polling) ---
+  if (action === "check-verification") {
+    const { loginToken } = body;
+    if (!loginToken) {
+      return NextResponse.json(
+        { error: "loginToken is required" },
+        { status: 400 },
+      );
+    }
+
+    const { data: session, error: fetchError } = await supabase
+      .from("cli_login_sessions")
+      .select("verified, user_id, email, expires_at")
+      .eq("token", loginToken)
+      .single();
+
+    if (fetchError || !session) {
+      return NextResponse.json(
+        { error: "Login session not found" },
+        { status: 404 },
+      );
+    }
+
+    // Check expiration
+    if (new Date(session.expires_at) < new Date()) {
+      await supabase
+        .from("cli_login_sessions")
+        .delete()
+        .eq("token", loginToken);
+      return NextResponse.json(
+        { error: "Login session expired" },
+        { status: 410 },
+      );
+    }
+
+    if (!session.verified) {
+      return NextResponse.json({ verified: false });
+    }
+
+    // Clean up used session
+    await supabase
+      .from("cli_login_sessions")
+      .delete()
+      .eq("token", loginToken);
+
+    return NextResponse.json({
+      verified: true,
+      userId: session.user_id,
+      email: session.email,
+    });
+  }
+
+  // --- Join or Create (require verified userId) ---
+  const { email, userId, inviteCode, orgName, memberName } = body;
 
   if (!email) {
     return NextResponse.json(
@@ -28,7 +140,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const supabase = getSupabase();
+  if (!userId) {
+    return NextResponse.json(
+      { error: "userId is required. Complete email verification first." },
+      { status: 400 },
+    );
+  }
 
   if (action === "join") {
     if (!inviteCode) {
@@ -51,7 +168,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Identify CLI member by email
     const displayName = memberName || "CLI User";
     const now = new Date().toISOString();
 
@@ -67,6 +183,11 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       memberId = existing.id;
+      // Update user_id if not set
+      await supabase
+        .from("org_members")
+        .update({ user_id: userId })
+        .eq("id", memberId);
     } else {
       memberId = `member-${Date.now()}`;
       await supabase.from("org_members").insert({
@@ -76,7 +197,7 @@ export async function POST(request: NextRequest) {
         email,
         role: "member",
         status: "active",
-        user_id: null,
+        user_id: userId,
         joined_at: now,
       });
     }
@@ -109,7 +230,7 @@ export async function POST(request: NextRequest) {
       total_budget: 0,
       invite_code: code,
       created_by: displayName,
-      creator_user_id: null,
+      creator_user_id: userId,
       created_at: now,
     });
 
@@ -125,7 +246,7 @@ export async function POST(request: NextRequest) {
       email,
       role: "admin",
       status: "active",
-      user_id: null,
+      user_id: userId,
       joined_at: now,
     });
 
@@ -136,7 +257,7 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json(
-    { error: 'Invalid action. Use "join" or "create".' },
+    { error: 'Invalid action. Use "send-verification", "check-verification", "join", or "create".' },
     { status: 400 },
   );
 }
