@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Factorio Agents - AI Agent Fleet Management",
+  title: "AgentFloor - AI Agent Fleet Management",
   description: "Visualize and manage your AI agent fleet across departments",
 };
 

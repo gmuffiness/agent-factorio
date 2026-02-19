@@ -23,9 +23,9 @@ export function TopBar() {
     <header className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center justify-between bg-slate-900 px-4 text-white">
       <div className="flex items-center gap-2">
         <span className="text-xl" role="img" aria-label="factory">
-          🏭
+          🏘️
         </span>
-        <span className="text-lg font-bold">Factorio Agents</span>
+        <span className="text-lg font-bold">AgentFloor</span>
       </div>
 
       <div className="text-sm font-medium text-slate-300">

@@ -1,4 +1,4 @@
-# Factorio Agents - MVP Product Specification
+# AgentFloor - MVP Product Specification
 
 > AI Agent Fleet Management with Spatial GUI
 > Version: 0.1 (MVP) | Last Updated: 2026-02-17
@@ -11,7 +11,7 @@
 
 **"AI 에이전트의 조감도(Bird's-Eye View)를 게임처럼 직관적으로."**
 
-Factorio Agents는 조직 전체의 AI 에이전트 운영 현황을 게더타운(Gather.town) 스타일의 2D Spatial GUI로 시각화하는 Fleet Management 도구다. 부서를 방(Room)으로, 에이전트를 아바타(Avatar)로, 스킬을 장비(Equipment)로 표현하여 CTO/VP of Engineering이 한눈에 AI 에이전트 현황을 파악할 수 있게 한다.
+AgentFloor는 조직 전체의 AI 에이전트 운영 현황을 게더타운(Gather.town) 스타일의 2D Spatial GUI로 시각화하는 Fleet Management 도구다. 부서를 방(Room)으로, 에이전트를 아바타(Avatar)로, 스킬을 장비(Equipment)로 표현하여 CTO/VP of Engineering이 한눈에 AI 에이전트 현황을 파악할 수 있게 한다.
 
 ### 문제 정의
 
@@ -106,7 +106,7 @@ Factorio Agents는 조직 전체의 AI 에이전트 운영 현황을 게더타�
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  [Logo] Factorio Agents    Total: $12,340/mo   [Zoom] [?]  │  ← Top Bar
+│  [Logo] AgentFloor    Total: $12,340/mo   [Zoom] [?]  │  ← Top Bar
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │   ┌──────────┐    ┌──────────┐    ┌──────────┐             │
@@ -632,7 +632,7 @@ MVP는 **컨셉 증명(Proof of Concept)** 단계이므로, 제품-시장 적합
            높은 Spatial/Visual 수준
                     ▲
                     │
-                    │    ★ Factorio Agents
+                    │    ★ AgentFloor
                     │       (Target Position)
                     │
                     │
@@ -651,7 +651,7 @@ MVP는 **컨셉 증명(Proof of Concept)** 단계이므로, 제품-시장 적합
 
 ### 경쟁 제품 대비 차별화
 
-| 차원 | Portkey / LiteLLM | MS Agent 365 | ClawHQ | **Factorio Agents** |
+| 차원 | Portkey / LiteLLM | MS Agent 365 | ClawHQ | **AgentFloor** |
 |---|---|---|---|---|
 | Multi-vendor 비용 추적 | 9/10 | 6/10 | 4/10 | **7/10** (mock) |
 | 부서별 그룹핑 | 8/10 | 5/10 | 3/10 | **9/10** |
@@ -669,7 +669,7 @@ MVP는 **컨셉 증명(Proof of Concept)** 단계이므로, 제품-시장 적합
 ### 포지셔닝 스테이트먼트
 
 > **"For CTOs and VP of Engineering** who need to manage AI agent fleets across departments,
-> **Factorio Agents** is a spatial fleet management tool
+> **AgentFloor** is a spatial fleet management tool
 > **that provides** a Gather.town-style visual map of all AI agents, their costs, and capabilities,
 > **unlike** traditional dashboards (Portkey, Helicone) or vendor-locked platforms (MS Agent 365),
 > **our product** makes AI agent management as intuitive as walking through a virtual office."

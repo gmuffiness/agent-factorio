@@ -1,13 +1,13 @@
 <!-- OMC:START -->
 <!-- OMC:END -->
 
-# Factorio Agents
+# AgentFloor
 
 AI Agent Fleet Management dashboard with spatial GUI visualization.
 
 ## Project Overview
 
-A Next.js 16 app that visualizes organizational AI agent fleets as a Factorio/Gather.town-style spatial map. Departments are rooms, agents are avatars, skills are equipment. Built for CTOs to get a bird's-eye view of their AI operations.
+A Next.js 16 app that visualizes organizational AI agent fleets as a Gather.town-style spatial map. Departments are rooms, agents are avatars, skills are equipment. Built for CTOs to get a bird's-eye view of their AI operations.
 
 See [docs/architecture.md](../docs/architecture.md) for full tech stack and directory layout.
 

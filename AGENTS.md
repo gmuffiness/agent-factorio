@@ -1,4 +1,4 @@
-# AGENTS.md — Agent Instructions for Factorio Agents
+# AGENTS.md — Agent Instructions for AgentFloor
 
 This file provides context for AI coding agents working on this codebase.
 
@@ -12,7 +12,7 @@ Open http://localhost:3000. The app uses mock data by default — no database se
 
 ## What This Project Is
 
-Factorio Agents is an AI agent fleet management dashboard. It shows an organization's AI agents (Claude, GPT, Gemini) across departments in a spatial visualization (like Gather.town) and graph view, with cost analytics and skill tracking.
+AgentFloor is an AI agent fleet management dashboard. It shows an organization's AI agents (Claude, GPT, Gemini) across departments in a spatial visualization (like Gather.town) and graph view, with cost analytics and skill tracking.
 
 ## Architecture Summary
 
