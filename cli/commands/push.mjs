@@ -64,6 +64,11 @@ export async function pushCommand() {
     body.mcpTools = detected.mcpServers.map((name) => ({ name, server: name }));
   }
 
+  // Attach skills
+  if (detected.skills.length > 0) {
+    body.skills = detected.skills;
+  }
+
   // Attach CLAUDE.md as context
   if (detected.claudeMd.found) {
     body.context = [{

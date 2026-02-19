@@ -2,6 +2,53 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/db/supabase";
 
 /**
+ * Upsert skill names into the skills table and link them to an agent.
+ * - For each skill name, find existing or create new skill row.
+ * - Replace all agent_skills links for the agent.
+ */
+async function upsertSkillsForAgent(
+  supabase: ReturnType<typeof getSupabase>,
+  agentId: string,
+  skillNames: string[],
+) {
+  const skillIds: string[] = [];
+
+  for (const name of skillNames) {
+    // Try to find existing skill by name
+    const { data: existing } = await supabase
+      .from("skills")
+      .select("id")
+      .eq("name", name)
+      .limit(1);
+
+    if (existing?.length) {
+      skillIds.push(existing[0].id);
+    } else {
+      // Create new skill
+      const newId = `skill-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      await supabase.from("skills").insert({
+        id: newId,
+        name,
+        icon: "",
+        description: "",
+        category: "generation",
+      });
+      skillIds.push(newId);
+    }
+  }
+
+  // Replace agent_skills links
+  await supabase.from("agent_skills").delete().eq("agent_id", agentId);
+  if (skillIds.length > 0) {
+    const inserts = skillIds.map((skillId) => ({
+      agent_id: agentId,
+      skill_id: skillId,
+    }));
+    await supabase.from("agent_skills").insert(inserts);
+  }
+}
+
+/**
  * POST /api/cli/push
  * CLI-only agent push endpoint — no Supabase Auth required.
  * Handles both create and update based on whether agentId is provided.
@@ -19,6 +66,7 @@ export async function POST(request: NextRequest) {
     departmentName,
     description,
     mcpTools,
+    skills,
     context,
     memberId,
   } = body;
@@ -104,6 +152,11 @@ export async function POST(request: NextRequest) {
           );
           await supabase.from("agent_context").insert(contextInserts);
         }
+      }
+
+      // Update skills
+      if (skills?.length) {
+        await upsertSkillsForAgent(supabase, agentId, skills);
       }
 
       return NextResponse.json({
@@ -199,6 +252,11 @@ export async function POST(request: NextRequest) {
       }),
     );
     await supabase.from("agent_context").insert(contextInserts);
+  }
+
+  // Link skills
+  if (skills?.length) {
+    await upsertSkillsForAgent(supabase, newAgentId, skills);
   }
 
   return NextResponse.json(
