@@ -9,11 +9,15 @@ AI Agent Fleet Management — centralized monitoring hub for distributed Claude 
 
 A Next.js 16 app that visualizes organizational AI agent fleets as a Gather.town-style spatial map. Departments are rooms, agents are avatars, skills are equipment.
 
-**Core concept**: Any developer can clone this repo, run `/agentfloor:setup`, and register their Claude Code agent to a shared organization. The hub tracks each agent's vendor, model, MCP servers, skills, and plugins — providing a single pane of glass for the entire AI fleet.
+AgentFloor는 두 부분으로 나뉩니다:
+- **Hub (Self-hosting)** — 이 레포 자체. 대시보드 웹앱 + API 서버를 배포합니다. 팀/회사에서 인프라 관리자가 한 번만 세팅합니다.
+- **Agent Registration** — 각 개발자가 자기 프로젝트(다른 레포)에서 `/agentfloor:setup`을 실행해 허브에 에이전트를 등록합니다.
 
 See [docs/architecture.md](../docs/architecture.md) for full tech stack, architecture diagram, and directory layout.
 
-## Development
+## Development (Hub)
+
+이 레포는 Hub 서버입니다. 아래는 Hub를 로컬에서 실행하기 위한 세팅입니다.
 
 ```bash
 pnpm install
@@ -90,9 +94,20 @@ See [docs/api-reference.md](../docs/api-reference.md) for endpoint reference.
 - Supabase tables have RLS enabled — all server-side access uses the service role key which bypasses RLS
 - For Vercel deployment, set env vars in the Vercel dashboard (Settings → Environment Variables)
 
-### Plugin System
-- `/agentfloor:setup` — interactive wizard to create/join org and register agent
-- Config stored in `.agentfloor/config.json` (gitignored)
+### CLI (`npx agentfloor`)
+- `agentfloor login` — 허브 연결 + 조직 참여/생성 (글로벌 config: `~/.agentfloor/config.json`)
+- `agentfloor push` — 현재 프로젝트의 에이전트 설정을 허브에 push (자동 감지: git, skills, MCP, CLAUDE.md)
+- `agentfloor status` — 현재 프로젝트 등록 상태 확인
+- `agentfloor whoami` — 로그인 정보 확인
+- `agentfloor logout` — 글로벌 config 삭제
+- CLI 소스: `cli/` 디렉토리 (bin.mjs, commands/, lib/)
+- CLI 전용 API: `POST /api/cli/login`, `POST /api/cli/push` (인증 불필요)
+
+See [docs/cli.md](../docs/cli.md) for full CLI manual, config format, and troubleshooting.
+
+### Plugin System (Agent Registration — 각 개발자의 프로젝트에서 실행)
+- `/agentfloor:setup` — 다른 프로젝트에서 실행하는 인터랙티브 위자드. 허브 URL 입력 → 조직 생성/참여 → 에이전트 등록
+- Config stored in `.agentfloor/config.json` (gitignored, 각 프로젝트 로컬에 저장)
 - Session hook sends heartbeat on every Claude Code session start
 - Plugin manifest at `.claude-plugin/plugin.json`
 

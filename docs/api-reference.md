@@ -104,6 +104,52 @@ Self-registration endpoint for agents to join the fleet. Used by the `/agentfloo
 
 **Response:** `{ "id", "departmentId", "organizationId", "message" }`
 
+## CLI Endpoints
+
+Auth-free endpoints for the `npx agentfloor` CLI. Bypasses Supabase Auth middleware.
+
+### `POST /api/cli/login`
+CLI login — create or join an organization via invite code.
+
+**Body (join):**
+```json
+{
+  "action": "join",
+  "inviteCode": "ABC123",
+  "memberName": "developer-name"
+}
+```
+
+**Body (create):**
+```json
+{
+  "action": "create",
+  "orgName": "My Org",
+  "memberName": "developer-name"
+}
+```
+
+**Response:** `{ "orgId", "orgName", "inviteCode" }`
+
+### `POST /api/cli/push`
+CLI push — register or update an agent. If `agentId` is provided and exists, updates it; otherwise creates a new one.
+
+**Body:**
+```json
+{
+  "agentId": "agent-123 (optional)",
+  "agentName": "my-agent",
+  "vendor": "anthropic",
+  "model": "claude-opus-4-6",
+  "orgId": "org-123",
+  "description": "...",
+  "mcpTools": [{ "name": "github", "server": "github" }],
+  "context": [{ "type": "claude-md", "content": "...", "sourceFile": ".claude/CLAUDE.md" }]
+}
+```
+
+**Response:** `{ "id", "updated", "message", "departmentId?" }`
+
 ## Graph
 
 ### `GET /api/graph`
