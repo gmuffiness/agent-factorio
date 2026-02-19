@@ -50,9 +50,10 @@ jobs:
         run: npm publish --provenance --access public
 
       - name: Summary
+        if: always()
         run: |
           if [ "${{ steps.version-check.outputs.changed }}" == "true" ]; then
-            echo "### Published agentfloor@${{ steps.version-check.outputs.local }} to npm" >> "$GITHUB_SUMMARY"
+            echo "### Published agentfloor@${{ steps.version-check.outputs.local }} to npm" >> "${GITHUB_STEP_SUMMARY}"
           else
-            echo "### Skipped — version ${{ steps.version-check.outputs.local }} already published" >> "$GITHUB_SUMMARY"
+            echo "### Skipped — version ${{ steps.version-check.outputs.local }} already published" >> "${GITHUB_STEP_SUMMARY}"
           fi
