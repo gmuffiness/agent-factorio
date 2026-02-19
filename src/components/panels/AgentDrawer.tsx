@@ -82,6 +82,95 @@ function AgentSpriteAvatar({ name, size = 40 }: { name: string; size?: number })
   );
 }
 
+/** Extract GitHub owner/repo from various URL formats */
+function extractGitHubRepo(url: string): { owner: string; repo: string } | null {
+  // SSH: git@github.com:owner/repo.git or git@github-alias:owner/repo.git
+  const sshMatch = url.match(/^git@[^:]*github[^:]*:([^/]+)\/([^/.]+)/);
+  if (sshMatch) return { owner: sshMatch[1], repo: sshMatch[2] };
+  // HTTPS: https://github.com/owner/repo
+  const httpsMatch = url.match(/github\.com\/([^/]+)\/([^/.]+)/);
+  if (httpsMatch) return { owner: httpsMatch[1], repo: httpsMatch[2] };
+  return null;
+}
+
+interface GitHubCommit {
+  sha: string;
+  message: string;
+  author: string;
+  date: string;
+  url: string;
+}
+
+function RecentCommits({ repoUrl }: { repoUrl: string }) {
+  const [commits, setCommits] = useState<GitHubCommit[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const info = extractGitHubRepo(repoUrl);
+    if (!info) { setLoading(false); setError(true); return; }
+
+    let cancelled = false;
+    fetch(`https://api.github.com/repos/${info.owner}/${info.repo}/commits?per_page=5`, {
+      headers: { Accept: "application/vnd.github.v3+json" },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("fetch failed");
+        return res.json();
+      })
+      .then((data: Array<{ sha: string; commit: { message: string; author: { name: string; date: string } }; html_url: string }>) => {
+        if (cancelled) return;
+        setCommits(
+          data.map((c) => ({
+            sha: c.sha.slice(0, 7),
+            message: c.commit.message.split("\n")[0],
+            author: c.commit.author.name,
+            date: c.commit.author.date,
+            url: c.html_url,
+          }))
+        );
+      })
+      .catch(() => { if (!cancelled) setError(true); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [repoUrl]);
+
+  if (loading) {
+    return (
+      <div className="mt-2 flex items-center gap-1.5 text-[10px] text-slate-400">
+        <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+        </svg>
+        Loading commits...
+      </div>
+    );
+  }
+
+  if (error || commits.length === 0) return null;
+
+  return (
+    <div className="mt-2 border-t border-purple-100 pt-2">
+      <p className="text-[10px] font-semibold text-slate-500 mb-1.5">Recent Commits</p>
+      <div className="space-y-1">
+        {commits.map((c) => (
+          <a
+            key={c.sha}
+            href={c.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-1.5 group hover:bg-purple-50/80 rounded px-1 py-0.5 -mx-1 transition-colors"
+          >
+            <code className="text-[10px] text-purple-500 font-mono shrink-0 mt-px">{c.sha}</code>
+            <span className="text-[10px] text-slate-600 truncate group-hover:text-slate-900">{c.message}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
   if (n >= 1_000) return (n / 1_000).toFixed(0) + "K";
@@ -619,6 +708,9 @@ export function AgentDrawer() {
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-600 mt-1 font-mono truncate underline"
                                   >{toHttpsUrl(resource.url)}</a>
+                                )}
+                                {resource.type === "git_repo" && isGitHubUrl(resource.url) && (
+                                  <RecentCommits repoUrl={resource.url} />
                                 )}
                               </div>
                             </div>

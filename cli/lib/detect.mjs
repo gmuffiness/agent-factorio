@@ -40,19 +40,21 @@ export function detectSkills(projectRoot) {
     }
   }
 
-  // .claude/skills/**/*.md (look for SKILL.md files)
+  // .claude/skills/**/SKILL.md (only the entry-point file per skill)
   const skillsDir = path.join(root, ".claude", "skills");
   if (fs.existsSync(skillsDir)) {
     for (const file of readdirRecursive(skillsDir, ".md")) {
+      if (path.basename(file) !== "SKILL.md") continue;
       const name = extractSkillName(file);
       if (name) skills.push(name);
     }
   }
 
-  // Also check top-level skills/ directory
+  // Also check top-level skills/ directory (same: only SKILL.md)
   const topSkillsDir = path.join(root, "skills");
   if (fs.existsSync(topSkillsDir)) {
     for (const file of readdirRecursive(topSkillsDir, ".md")) {
+      if (path.basename(file) !== "SKILL.md") continue;
       const name = extractSkillName(file);
       if (name) skills.push(name);
     }
