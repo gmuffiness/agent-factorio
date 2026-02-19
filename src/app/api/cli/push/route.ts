@@ -49,6 +49,38 @@ async function upsertSkillsForAgent(
 }
 
 /**
+ * Upsert git repo URL into agent_resources table.
+ * Replaces existing git_repo resource for the agent if any.
+ */
+async function upsertRepoUrl(
+  supabase: ReturnType<typeof getSupabase>,
+  agentId: string,
+  repoUrl: string,
+) {
+  // Delete existing git_repo resources for this agent
+  await supabase
+    .from("agent_resources")
+    .delete()
+    .eq("agent_id", agentId)
+    .eq("type", "git_repo");
+
+  // Derive a short name from the URL
+  const name = repoUrl.replace(/\.git$/, "").split("/").slice(-2).join("/");
+
+  await supabase.from("agent_resources").insert({
+    id: `res-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    agent_id: agentId,
+    type: "git_repo",
+    name,
+    icon: "",
+    description: "",
+    url: repoUrl,
+    access_level: "write",
+    created_at: new Date().toISOString(),
+  });
+}
+
+/**
  * POST /api/cli/push
  * CLI-only agent push endpoint — no Supabase Auth required.
  * Handles both create and update based on whether agentId is provided.
@@ -69,6 +101,7 @@ export async function POST(request: NextRequest) {
     skills,
     context,
     memberId,
+    repoUrl,
   } = body;
 
   if (!agentName || !vendor || !model || !orgId) {
@@ -157,6 +190,11 @@ export async function POST(request: NextRequest) {
       // Update skills
       if (skills?.length) {
         await upsertSkillsForAgent(supabase, agentId, skills);
+      }
+
+      // Update git repo URL
+      if (repoUrl) {
+        await upsertRepoUrl(supabase, agentId, repoUrl);
       }
 
       return NextResponse.json({
@@ -257,6 +295,11 @@ export async function POST(request: NextRequest) {
   // Link skills
   if (skills?.length) {
     await upsertSkillsForAgent(supabase, newAgentId, skills);
+  }
+
+  // Save git repo URL
+  if (repoUrl) {
+    await upsertRepoUrl(supabase, newAgentId, repoUrl);
   }
 
   return NextResponse.json(

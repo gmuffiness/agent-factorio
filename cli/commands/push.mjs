@@ -69,6 +69,11 @@ export async function pushCommand() {
     body.skills = detected.skills;
   }
 
+  // Attach git repo URL
+  if (detected.git.repoUrl) {
+    body.repoUrl = detected.git.repoUrl;
+  }
+
   // Attach CLAUDE.md as context
   if (detected.claudeMd.found) {
     body.context = [{
