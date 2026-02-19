@@ -55,6 +55,7 @@ export async function pushCommand() {
     vendor,
     model,
     orgId: org.orgId,
+    memberId: org.memberId || undefined,
     description: `Pushed via CLI at ${new Date().toISOString()}`,
   };
 

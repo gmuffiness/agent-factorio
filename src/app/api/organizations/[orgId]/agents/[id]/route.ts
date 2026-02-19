@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/db/supabase";
+import { requireOrgMember } from "@/lib/auth";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ orgId: string; id: string }> }) {
-  const { id } = await params;
+  const { orgId, id } = await params;
+
+  const memberCheck = await requireOrgMember(orgId);
+  if (memberCheck instanceof NextResponse) return memberCheck;
+
   const supabase = getSupabase();
 
   const { data: agent, error } = await supabase
@@ -50,9 +55,58 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     .select("*")
     .eq("agent_id", id);
 
+  // Agent Context (CLAUDE.md, README, etc.)
+  const { data: contextRows } = await supabase
+    .from("agent_context")
+    .select("*")
+    .eq("agent_id", id);
+
+  // Registered by (org member who pushed this agent)
+  let registeredByMember = null;
+  if (agent.registered_by) {
+    const { data: memberRow } = await supabase
+      .from("org_members")
+      .select("id, name, email, role")
+      .eq("id", agent.registered_by)
+      .single();
+    if (memberRow) {
+      registeredByMember = {
+        id: memberRow.id,
+        name: memberRow.name,
+        email: memberRow.email,
+        role: memberRow.role,
+      };
+    }
+  }
+
+  // Human (owner)
+  let human = null;
+  if (agent.human_id) {
+    const { data: humanRow } = await supabase
+      .from("humans")
+      .select("*")
+      .eq("id", agent.human_id)
+      .single();
+    if (humanRow) {
+      human = {
+        id: humanRow.id,
+        orgId: humanRow.org_id,
+        name: humanRow.name,
+        email: humanRow.email,
+        role: humanRow.role,
+        avatarUrl: humanRow.avatar_url,
+        createdAt: humanRow.created_at,
+      };
+    }
+  }
+
   return NextResponse.json({
     ...agent,
     position: { x: agent.pos_x, y: agent.pos_y },
+    humanId: agent.human_id,
+    human,
+    registeredBy: agent.registered_by ?? null,
+    registeredByMember,
     skills: agentSkillList,
     plugins: pluginRows ?? [],
     mcpTools: mcpRows ?? [],
@@ -72,11 +126,23 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       cost: u.cost,
       requests: u.requests,
     })),
+    context: (contextRows ?? []).map((c) => ({
+      id: c.id,
+      agentId: c.agent_id,
+      type: c.type,
+      content: c.content,
+      sourceFile: c.source_file,
+      updatedAt: c.updated_at,
+    })),
   });
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ orgId: string; id: string }> }) {
-  const { id } = await params;
+  const { orgId, id } = await params;
+
+  const memberCheck = await requireOrgMember(orgId);
+  if (memberCheck instanceof NextResponse) return memberCheck;
+
   const body = await request.json();
   const supabase = getSupabase();
 
@@ -98,6 +164,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (body.status !== undefined) updates.status = body.status;
   if (body.monthlyCost !== undefined) updates.monthly_cost = body.monthlyCost;
   if (body.deptId !== undefined) updates.dept_id = body.deptId;
+  if (body.humanId !== undefined) updates.human_id = body.humanId;
 
   if (Object.keys(updates).length > 0) {
     await supabase.from("agents").update(updates).eq("id", id);
@@ -154,7 +221,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ orgId: string; id: string }> }) {
-  const { id } = await params;
+  const { orgId, id } = await params;
+
+  const memberCheck = await requireOrgMember(orgId);
+  if (memberCheck instanceof NextResponse) return memberCheck;
+
   const supabase = getSupabase();
 
   const { data: existing, error: findError } = await supabase

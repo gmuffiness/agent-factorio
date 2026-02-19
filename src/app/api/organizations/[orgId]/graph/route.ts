@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/db/supabase";
+import { requireOrgMember } from "@/lib/auth";
 import type { Organization, Department, Agent, Skill, Plugin, McpTool, MonthlyCost, DailyUsage } from "@/types";
 
 interface GraphNode {
@@ -36,6 +37,7 @@ function buildGraph(org: Organization) {
       position: { x: deptX, y: deptY },
       data: {
         name: dept.name,
+        parentId: dept.parentId,
         agentCount: dept.agents.length,
         budget: dept.budget,
         monthlySpend: dept.monthlySpend,
@@ -233,7 +235,8 @@ async function loadOrganization(orgId: string): Promise<Organization | null> {
         status: agent.status as Agent["status"],
         monthlyCost: agent.monthly_cost, tokensUsed: agent.tokens_used,
         position: { x: agent.pos_x, y: agent.pos_y },
-        skills, plugins, mcpTools, resources: [], usageHistory,
+        skills, plugins, mcpTools, resources: [], usageHistory, humanId: null,
+        registeredBy: agent.registered_by ?? null,
         lastActive: agent.last_active, createdAt: agent.created_at,
       });
     }
@@ -246,6 +249,7 @@ async function loadOrganization(orgId: string): Promise<Organization | null> {
 
     depts.push({
       id: dept.id, name: dept.name, description: dept.description,
+      parentId: dept.parent_id ?? null,
       budget: dept.budget, monthlySpend: dept.monthly_spend,
       layout: { x: dept.layout_x, y: dept.layout_y, width: dept.layout_w, height: dept.layout_h },
       primaryVendor: dept.primary_vendor as Department["primaryVendor"],
@@ -260,6 +264,10 @@ async function loadOrganization(orgId: string): Promise<Organization | null> {
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
+
+  const memberCheck = await requireOrgMember(orgId);
+  if (memberCheck instanceof NextResponse) return memberCheck;
+
   const org = await loadOrganization(orgId);
   if (!org) {
     return NextResponse.json({ nodes: [], edges: [] });

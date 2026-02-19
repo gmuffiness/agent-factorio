@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore } from "@/stores/app-store";
 import { formatCurrency, getVendorColor, cn } from "@/lib/utils";
 import { StatusBadge, VendorBadge } from "@/components/ui/Badge";
 import UsageBarChart from "@/components/charts/UsageBarChart";
+import type { Agent, AgentContext } from "@/types";
 
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
@@ -22,15 +23,84 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
-type Tab = "overview" | "tools" | "usage";
+type Tab = "overview" | "tools" | "context" | "usage";
+
+type PushRequestState = "idle" | "loading" | "sent" | "error";
 
 export function AgentDrawer() {
   const getSelectedAgent = useAppStore((s) => s.getSelectedAgent);
+  const selectedAgentId = useAppStore((s) => s.selectedAgentId);
+  const currentOrgId = useAppStore((s) => s.currentOrgId);
   const selectAgent = useAppStore((s) => s.selectAgent);
   const organization = useAppStore((s) => s.organization);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [fetchedAgent, setFetchedAgent] = useState<Agent | null>(null);
+  const [pushRequestState, setPushRequestState] = useState<PushRequestState>("idle");
 
-  const agent = getSelectedAgent();
+  // Reset push request state when agent changes
+  useEffect(() => {
+    setPushRequestState("idle");
+  }, [selectedAgentId]);
+
+  async function handlePushRequest() {
+    if (!currentOrgId || !selectedAgentId) return;
+    setPushRequestState("loading");
+    try {
+      const res = await fetch(
+        `/api/organizations/${currentOrgId}/agents/${selectedAgentId}/push-request`,
+        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) },
+      );
+      if (res.ok) {
+        setPushRequestState("sent");
+      } else {
+        setPushRequestState("error");
+      }
+    } catch {
+      setPushRequestState("error");
+    }
+  }
+
+  // If agent not in store (e.g. agents table page), fetch from API
+  useEffect(() => {
+    if (!selectedAgentId) { setFetchedAgent(null); return; }
+    const storeAgent = getSelectedAgent();
+    if (storeAgent) { setFetchedAgent(null); return; }
+    if (!currentOrgId) { setFetchedAgent(null); return; }
+
+    let cancelled = false;
+    fetch(`/api/organizations/${currentOrgId}/agents/${selectedAgentId}`)
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (cancelled || !data) return;
+        const mapped: Agent = {
+          id: data.id,
+          name: data.name,
+          description: data.description ?? "",
+          vendor: data.vendor,
+          model: data.model,
+          status: data.status,
+          monthlyCost: data.monthly_cost ?? data.monthlyCost ?? 0,
+          tokensUsed: data.tokens_used ?? data.tokensUsed ?? 0,
+          position: data.position ?? { x: data.pos_x ?? 0, y: data.pos_y ?? 0 },
+          skills: data.skills ?? [],
+          plugins: data.plugins ?? [],
+          mcpTools: data.mcpTools ?? [],
+          resources: data.resources ?? [],
+          usageHistory: data.usageHistory ?? [],
+          lastActive: data.last_active ?? data.lastActive ?? "",
+          createdAt: data.created_at ?? data.createdAt ?? "",
+          humanId: data.human_id ?? data.humanId ?? null,
+          registeredBy: data.registered_by ?? data.registeredBy ?? null,
+          registeredByMember: data.registeredByMember ?? null,
+          context: data.context ?? [],
+        };
+        setFetchedAgent(mapped);
+      })
+      .catch(() => setFetchedAgent(null));
+    return () => { cancelled = true; };
+  }, [selectedAgentId, getSelectedAgent]);
+
+  const agent = getSelectedAgent() ?? fetchedAgent;
   const isOpen = agent !== null;
 
   const department = agent
@@ -46,6 +116,7 @@ export function AgentDrawer() {
   const tabs: { id: Tab; label: string; count?: number }[] = [
     { id: "overview", label: "Overview" },
     { id: "tools", label: "Skills & Tools", count: agent ? agent.skills.length + agent.plugins.length + agent.mcpTools.length + (agent.resources?.length ?? 0) : 0 },
+    { id: "context", label: "Context", count: agent?.context?.length ?? 0 },
     { id: "usage", label: "Usage" },
   ];
 
@@ -92,14 +163,55 @@ export function AgentDrawer() {
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => { selectAgent(null); setActiveTab("overview"); }}
-                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-                >
-                  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-                    <path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={handlePushRequest}
+                    disabled={pushRequestState === "loading" || pushRequestState === "sent"}
+                    title="Request agent to run agentfloor push"
+                    className={cn(
+                      "flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors",
+                      pushRequestState === "sent"
+                        ? "bg-green-50 text-green-600 border border-green-100"
+                        : pushRequestState === "error"
+                          ? "bg-red-50 text-red-500 border border-red-100 hover:bg-red-100"
+                          : "bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100"
+                    )}
+                  >
+                    {pushRequestState === "loading" ? (
+                      <>
+                        <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                        </svg>
+                        Sending...
+                      </>
+                    ) : pushRequestState === "sent" ? (
+                      <>
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
+                          <path d="M5 10l4 4 6-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Requested
+                      </>
+                    ) : pushRequestState === "error" ? (
+                      "Failed"
+                    ) : (
+                      <>
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
+                          <path d="M10 3v10M10 3l-3 3M10 3l3 3M4 13v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Request Push
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => { selectAgent(null); setActiveTab("overview"); }}
+                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                      <path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               {/* Badges */}
@@ -215,15 +327,22 @@ export function AgentDrawer() {
                             storage: { bg: "bg-teal-50", border: "border-teal-100", text: "text-teal-700" },
                           };
                           const colors = colorMap[resource.type];
-                          return (
+                          const chip = (
                             <div
-                              key={resource.id}
                               className={cn("flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs", colors.bg, colors.border)}
                             >
                               <span className="text-sm">{resource.icon}</span>
                               <span className={cn("font-medium", colors.text)}>{resource.name}</span>
                             </div>
                           );
+                          if (resource.url) {
+                            return (
+                              <a key={resource.id} href={resource.url} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                                {chip}
+                              </a>
+                            );
+                          }
+                          return chip;
                         })}
                       </div>
                     </div>
@@ -339,7 +458,12 @@ export function AgentDrawer() {
                                 </div>
                                 <p className="text-xs text-slate-500 mt-0.5">{resource.description}</p>
                                 {resource.url && (
-                                  <p className="text-[10px] text-slate-400 mt-1 font-mono truncate">{resource.url}</p>
+                                  <a
+                                    href={resource.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block text-[10px] text-blue-400 hover:text-blue-600 mt-1 font-mono truncate underline"
+                                  >{resource.url}</a>
                                 )}
                               </div>
                             </div>
@@ -382,6 +506,50 @@ export function AgentDrawer() {
                       ))}
                     </div>
                   </div>
+                </>
+              )}
+
+              {activeTab === "context" && (
+                <>
+                  {agent.context && agent.context.length > 0 ? (
+                    <div className="space-y-4">
+                      {agent.context.map((ctx: AgentContext) => {
+                        const labelMap: Record<string, { label: string; bg: string; border: string; text: string }> = {
+                          claude_md: { label: "CLAUDE.md", bg: "bg-purple-50", border: "border-purple-100", text: "text-purple-600" },
+                          readme: { label: "README", bg: "bg-blue-50", border: "border-blue-100", text: "text-blue-600" },
+                          custom: { label: "Custom", bg: "bg-slate-50", border: "border-slate-100", text: "text-slate-600" },
+                        };
+                        const style = labelMap[ctx.type] ?? labelMap.custom;
+                        return (
+                          <div key={ctx.id} className="rounded-xl border border-slate-100 overflow-hidden">
+                            <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+                              <div className="flex items-center gap-2">
+                                <span className={cn("text-[10px] font-medium rounded-full px-2 py-0.5", style.bg, style.border, style.text, "border")}>
+                                  {style.label}
+                                </span>
+                                {ctx.sourceFile && (
+                                  <span className="text-[10px] text-slate-400 font-mono">{ctx.sourceFile}</span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-slate-400">
+                                {new Date(ctx.updatedAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <pre className="p-4 text-xs text-slate-700 leading-relaxed overflow-x-auto max-h-80 overflow-y-auto whitespace-pre-wrap break-words font-mono bg-white">
+                              {ctx.content}
+                            </pre>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl bg-slate-50 p-6 text-center">
+                      <p className="text-sm text-slate-400">No context files registered.</p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Use <code className="bg-slate-100 px-1 rounded">agentfloor push</code> to sync CLAUDE.md and other context.
+                      </p>
+                    </div>
+                  )}
                 </>
               )}
 

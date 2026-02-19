@@ -14,12 +14,19 @@ function generateInviteCode(): string {
  * POST /api/cli/login
  * CLI-only login endpoint — no Supabase Auth required.
  * Supports two actions:
- *   - { action: "join", inviteCode, memberName? } — join existing org via invite code
- *   - { action: "create", orgName, memberName? } — create new org
+ *   - { action: "join", inviteCode, email, memberName? } — join existing org via invite code
+ *   - { action: "create", orgName, email, memberName? } — create new org
  */
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { action, inviteCode, orgName, memberName } = body;
+  const { action, inviteCode, orgName, memberName, email } = body;
+
+  if (!email) {
+    return NextResponse.json(
+      { error: "email is required" },
+      { status: 400 },
+    );
+  }
 
   const supabase = getSupabase();
 
@@ -44,24 +51,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Add as CLI member (no user_id, identified by name)
+    // Identify CLI member by email
     const displayName = memberName || "CLI User";
     const now = new Date().toISOString();
 
-    // Check if CLI member with same name already exists
+    // Check if member with same email already exists in this org
     const { data: existing } = await supabase
       .from("org_members")
       .select("id, role")
       .eq("org_id", org.id)
-      .eq("name", displayName)
-      .is("user_id", null)
+      .eq("email", email)
       .maybeSingle();
 
-    if (!existing) {
+    let memberId: string;
+
+    if (existing) {
+      memberId = existing.id;
+    } else {
+      memberId = `member-${Date.now()}`;
       await supabase.from("org_members").insert({
-        id: `member-${Date.now()}`,
+        id: memberId,
         org_id: org.id,
         name: displayName,
+        email,
         role: "member",
         status: "active",
         user_id: null,
@@ -73,6 +85,7 @@ export async function POST(request: NextRequest) {
       orgId: org.id,
       orgName: org.name,
       inviteCode: org.invite_code,
+      memberId,
     });
   }
 
@@ -88,6 +101,7 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
     const code = generateInviteCode();
     const displayName = memberName || "CLI User";
+    const memberId = `member-${Date.now()}`;
 
     const { error: orgError } = await supabase.from("organizations").insert({
       id,
@@ -105,9 +119,10 @@ export async function POST(request: NextRequest) {
 
     // Add creator as admin member
     await supabase.from("org_members").insert({
-      id: `member-${Date.now()}`,
+      id: memberId,
       org_id: id,
       name: displayName,
+      email,
       role: "admin",
       status: "active",
       user_id: null,
@@ -115,7 +130,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(
-      { orgId: id, orgName, inviteCode: code },
+      { orgId: id, orgName, inviteCode: code, memberId },
       { status: 201 },
     );
   }

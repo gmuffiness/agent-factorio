@@ -31,6 +31,14 @@ export async function loginCommand() {
     "Create new",
   ]);
 
+  // Common: ask for email and name
+  const email = await ask("Your email (used as your identifier)");
+  if (!email) {
+    error("Email is required.");
+    process.exit(1);
+  }
+  const memberName = await ask("Your name (displayed in the org)", "CLI User");
+
   if (actionIdx === 1) {
     // Create new org
     const orgName = await ask("Organization name");
@@ -39,10 +47,8 @@ export async function loginCommand() {
       process.exit(1);
     }
 
-    const memberName = await ask("Your name (displayed in the org)", "CLI User");
-
     const res = await apiCall(hubUrl, "/api/cli/login", {
-      body: { action: "create", orgName, memberName },
+      body: { action: "create", orgName, memberName, email },
     });
 
     if (!res.ok) {
@@ -50,8 +56,8 @@ export async function loginCommand() {
       process.exit(1);
     }
 
-    const { orgId, orgName: name, inviteCode } = res.data;
-    upsertOrg({ hubUrl, orgId, orgName: name, inviteCode, memberName });
+    const { orgId, orgName: name, inviteCode, memberId } = res.data;
+    upsertOrg({ hubUrl, orgId, orgName: name, inviteCode, memberName, email, memberId });
 
     success(`Created "${name}" (${orgId})`);
     info(`Invite code: ${inviteCode} — share with your team!`);
@@ -63,10 +69,8 @@ export async function loginCommand() {
       process.exit(1);
     }
 
-    const memberName = await ask("Your name (displayed in the org)", "CLI User");
-
     const res = await apiCall(hubUrl, "/api/cli/login", {
-      body: { action: "join", inviteCode, memberName },
+      body: { action: "join", inviteCode, memberName, email },
     });
 
     if (!res.ok) {
@@ -74,8 +78,8 @@ export async function loginCommand() {
       process.exit(1);
     }
 
-    const { orgId, orgName } = res.data;
-    upsertOrg({ hubUrl, orgId, orgName, inviteCode: inviteCode.toUpperCase(), memberName });
+    const { orgId, orgName, memberId } = res.data;
+    upsertOrg({ hubUrl, orgId, orgName, inviteCode: inviteCode.toUpperCase(), memberName, email, memberId });
 
     success(`Joined "${orgName}" (${orgId})`);
   }

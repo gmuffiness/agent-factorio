@@ -46,6 +46,7 @@ npx supabase gen types typescript --linked > src/types/supabase.ts  # DB 타입 
 ```
 - 마이그레이션 파일은 `supabase/migrations/` 디렉토리에 저장
 - 새 테이블/컬럼 추가 시 반드시 마이그레이션 파일로 관리 (수동 SQL 편집 금지)
+- **DB 스키마 변경 시 반드시 `npx supabase db push` 실행** — 마이그레이션 파일 생성만으로는 DB에 반영되지 않음
 
 ## Key Conventions
 
@@ -65,6 +66,8 @@ npx supabase gen types typescript --linked > src/types/supabase.ts  # DB 타입 
 
 ### Data Model
 - Organization (with invite code) → OrgMember[] + Department[] → Agent[] → Skill[], Plugin[], McpTool[]
+- `org_members`: email 기반 식별 (`email` 컬럼), Supabase Auth 연동 시 `user_id` 사용
+- `agents`: `registered_by` (FK → `org_members.id`) — 어떤 멤버가 등록했는지 추적
 - Types defined in `src/types/index.ts`
 - DB schema in `supabase/migrations/001_init.sql` (PostgreSQL)
 - Mock data in `src/data/mock-data.ts` for development
@@ -95,8 +98,8 @@ See [docs/api-reference.md](../docs/api-reference.md) for endpoint reference.
 - For Vercel deployment, set env vars in the Vercel dashboard (Settings → Environment Variables)
 
 ### CLI (`npx agentfloor`)
-- `agentfloor login` — 허브 연결 + 조직 참여/생성 (글로벌 config: `~/.agentfloor/config.json`)
-- `agentfloor push` — 현재 프로젝트의 에이전트 설정을 허브에 push (자동 감지: git, skills, MCP, CLAUDE.md)
+- `agentfloor login` — 허브 연결 + 조직 참여/생성. email 필수 (멤버 식별용). 글로벌 config에 `memberId` 저장 (`~/.agentfloor/config.json`)
+- `agentfloor push` — 현재 프로젝트의 에이전트 설정을 허브에 push (자동 감지: git, skills, MCP, CLAUDE.md). `memberId`를 `registered_by`로 기록
 - `agentfloor status` — 현재 프로젝트 등록 상태 확인
 - `agentfloor whoami` — 로그인 정보 확인
 - `agentfloor logout` — 글로벌 config 삭제

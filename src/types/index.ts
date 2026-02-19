@@ -54,6 +54,16 @@ export interface MonthlyCost {
   byVendor: Record<Vendor, number>;
 }
 
+export interface Human {
+  id: string;
+  orgId: string;
+  name: string;
+  email: string;
+  role: string;
+  avatarUrl: string;
+  createdAt: string;
+}
+
 export interface Agent {
   id: string;
   name: string;
@@ -71,12 +81,18 @@ export interface Agent {
   usageHistory: DailyUsage[];
   lastActive: string;
   createdAt: string;
+  humanId: string | null;
+  human?: Human | null;
+  registeredBy: string | null;
+  registeredByMember?: OrgMember | null;
+  context?: AgentContext[];
 }
 
 export interface Department {
   id: string;
   name: string;
   description: string;
+  parentId: string | null;
   budget: number;
   monthlySpend: number;
   layout: { x: number; y: number; width: number; height: number };
@@ -94,6 +110,51 @@ export interface Organization {
   departments: Department[];
 }
 
+export interface AgentContext {
+  id: string;
+  agentId: string;
+  type: "claude_md" | "readme" | "custom";
+  content: string;
+  sourceFile: string | null;
+  updatedAt: string;
+}
+
+export interface Conversation {
+  id: string;
+  orgId: string;
+  agentId: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  lastMessage?: string;
+}
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  createdAt: string;
+}
+
+export type AnnouncementTargetType = "all" | "department" | "agent";
+export type AnnouncementPriority = "normal" | "urgent";
+
+export interface Announcement {
+  id: string;
+  orgId: string;
+  title: string;
+  content: string;
+  targetType: AnnouncementTargetType;
+  targetId: string | null;
+  priority: AnnouncementPriority;
+  createdBy: string | null;
+  createdAt: string;
+  expiresAt: string | null;
+  ackCount?: number;
+  targetCount?: number;
+}
+
 export type OrgMemberRole = "admin" | "member";
 export type OrgMemberStatus = "active" | "pending";
 
@@ -101,6 +162,7 @@ export interface OrgMember {
   id: string;
   orgId: string;
   name: string;
+  email: string | null;
   role: OrgMemberRole;
   status: OrgMemberStatus;
   joinedAt: string;

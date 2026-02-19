@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
     description,
     mcpTools,
     context,
+    memberId,
   } = body;
 
   if (!agentName || !vendor || !model || !orgId) {
@@ -163,6 +164,7 @@ export async function POST(request: NextRequest) {
     pos_y: Math.random() * 150 + 80,
     last_active: now,
     created_at: now,
+    registered_by: memberId || null,
   });
 
   // Create MCP tools

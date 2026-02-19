@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/db/supabase";
-import type { Organization, Department, Agent, Skill, Plugin, McpTool, MonthlyCost, DailyUsage } from "@/types";
+import { requireOrgMember, requireOrgAdmin } from "@/lib/auth";
+import type { Organization, Department, Agent, Skill, Plugin, McpTool, AgentResource, MonthlyCost, DailyUsage } from "@/types";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
+
+  const memberCheck = await requireOrgMember(orgId);
+  if (memberCheck instanceof NextResponse) return memberCheck;
+
   const supabase = getSupabase();
 
   const { data: org, error: orgError } = await supabase
@@ -88,6 +93,23 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         requests: u.requests,
       }));
 
+      // Resources
+      const { data: resourceRows } = await supabase
+        .from("agent_resources")
+        .select("*")
+        .eq("agent_id", agent.id);
+
+      const resourceList: AgentResource[] = (resourceRows ?? []).map((r) => ({
+        id: r.id,
+        type: r.type as AgentResource["type"],
+        name: r.name,
+        icon: r.icon,
+        description: r.description,
+        url: r.url,
+        accessLevel: r.access_level as AgentResource["accessLevel"],
+        createdAt: r.created_at,
+      }));
+
       agentList.push({
         id: agent.id,
         name: agent.name,
@@ -101,10 +123,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         skills: agentSkillList,
         plugins: pluginList,
         mcpTools: mcpList,
-        resources: [],
+        resources: resourceList,
         usageHistory: usageList,
         lastActive: agent.last_active,
         createdAt: agent.created_at,
+        humanId: agent.human_id ?? null,
+        registeredBy: agent.registered_by ?? null,
       });
     }
 
@@ -128,6 +152,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       id: dept.id,
       name: dept.name,
       description: dept.description,
+      parentId: dept.parent_id ?? null,
       budget: dept.budget,
       monthlySpend: dept.monthly_spend,
       layout: { x: dept.layout_x, y: dept.layout_y, width: dept.layout_w, height: dept.layout_h },
@@ -145,4 +170,56 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   };
 
   return NextResponse.json(result);
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
+  const { orgId } = await params;
+
+  const adminCheck = await requireOrgAdmin(orgId);
+  if (adminCheck instanceof NextResponse) return adminCheck;
+
+  const body = await request.json() as { name?: string; totalBudget?: number };
+
+  const updates: Record<string, unknown> = {};
+  if (body.name !== undefined) updates.name = body.name;
+  if (body.totalBudget !== undefined) updates.total_budget = body.totalBudget;
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+  }
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("organizations")
+    .update(updates)
+    .eq("id", orgId)
+    .select("id, name, total_budget")
+    .single();
+
+  if (error || !data) {
+    return NextResponse.json({ error: "Failed to update organization" }, { status: 500 });
+  }
+
+  return NextResponse.json({ id: data.id, name: data.name, totalBudget: data.total_budget });
+}
+
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
+  const { orgId } = await params;
+
+  const adminCheck = await requireOrgAdmin(orgId);
+  if (adminCheck instanceof NextResponse) return adminCheck;
+
+  // Only the creator (first admin) should be able to delete — check role is admin
+  const supabase = getSupabase();
+
+  const { error } = await supabase
+    .from("organizations")
+    .delete()
+    .eq("id", orgId);
+
+  if (error) {
+    return NextResponse.json({ error: "Failed to delete organization" }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
 }
