@@ -9,8 +9,11 @@ interface AppState {
   viewMode: "map" | "cost" | "skills";
   zoomLevel: number;
   isLoaded: boolean;
+  sidebarCollapsed: boolean;
   // Actions
   setCurrentOrgId: (orgId: string) => void;
+  toggleSidebar: () => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
   selectDepartment: (id: string | null) => void;
   selectAgent: (id: string | null) => void;
   setViewMode: (mode: "map" | "cost" | "skills") => void;
@@ -49,9 +52,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   viewMode: "map",
   zoomLevel: 1,
   isLoaded: false,
+  sidebarCollapsed: false,
   announcements: [],
 
   setCurrentOrgId: (orgId) => set({ currentOrgId: orgId }),
+
+  toggleSidebar: () => {
+    const next = !get().sidebarCollapsed;
+    localStorage.setItem("agentfloor-sidebar-collapsed", JSON.stringify(next));
+    set({ sidebarCollapsed: next });
+  },
+
+  setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
 
   selectDepartment: (id) =>
     set({ selectedDepartmentId: id, selectedAgentId: null }),

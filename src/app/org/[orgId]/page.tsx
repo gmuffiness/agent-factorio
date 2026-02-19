@@ -9,7 +9,7 @@ const SpatialCanvas = dynamic(
 
 export default function OrgHome() {
   return (
-    <div className="flex flex-col" style={{ height: "calc(100vh - 56px - 40px)" }}>
+    <div className="flex flex-col" style={{ height: "calc(100vh - 48px - 40px)" }}>
       <div className="flex-1 relative overflow-hidden">
         <SpatialCanvas />
       </div>

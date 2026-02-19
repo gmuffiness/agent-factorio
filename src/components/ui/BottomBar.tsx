@@ -1,12 +1,13 @@
 "use client";
 
 import { useAppStore } from "@/stores/app-store";
-import { getVendorColor, getVendorLabel, formatCurrency } from "@/lib/utils";
+import { getVendorColor, getVendorLabel, formatCurrency, cn } from "@/lib/utils";
 import type { Vendor } from "@/types";
 
 export function BottomBar() {
   const organization = useAppStore((s) => s.organization);
   const getVendorCostBreakdown = useAppStore((s) => s.getVendorCostBreakdown);
+  const collapsed = useAppStore((s) => s.sidebarCollapsed);
 
   const breakdown = getVendorCostBreakdown();
   const total = Object.values(breakdown).reduce((a, b) => a + b, 0);
@@ -18,7 +19,12 @@ export function BottomBar() {
   const vendors: Vendor[] = ["anthropic", "openai", "google"];
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-50 flex h-10 items-center justify-between bg-slate-800 px-4 text-sm text-white">
+    <footer
+      className={cn(
+        "fixed bottom-0 right-0 z-40 flex h-10 items-center justify-between bg-slate-800 px-4 text-sm text-white transition-[left] duration-300",
+        collapsed ? "left-16" : "left-60"
+      )}
+    >
       <div className="flex items-center gap-4">
         {vendors.map((vendor) => {
           const pct = total > 0 ? ((breakdown[vendor] / total) * 100).toFixed(0) : "0";

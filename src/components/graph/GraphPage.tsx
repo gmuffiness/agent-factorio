@@ -107,7 +107,7 @@ export function GraphPage() {
   };
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100vh - 56px - 40px)" }}>
+    <div className="flex flex-col" style={{ height: "calc(100vh - 48px - 40px)" }}>
       {/* Filter bar */}
       <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 border-b border-slate-200">
         <span className="text-xs font-medium text-slate-500 mr-1">Show:</span>

@@ -134,7 +134,7 @@ export function AgentDrawer() {
       {/* Drawer */}
       <div
         className={cn(
-          "fixed right-0 top-14 z-50 h-[calc(100%-3.5rem)] w-[440px] overflow-y-auto bg-white shadow-2xl transition-transform duration-300",
+          "fixed right-0 top-12 z-50 h-[calc(100%-3rem)] w-[440px] overflow-y-auto bg-white shadow-2xl transition-transform duration-300",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
