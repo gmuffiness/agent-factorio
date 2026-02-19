@@ -611,6 +611,17 @@ export function AgentDrawer() {
                         <span className="text-slate-400">Vendor</span>
                         <span className="text-slate-700 font-medium capitalize">{agent.vendor}</span>
                       </div>
+                      {agent.registeredByMember && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Registered by</span>
+                          <span className="text-slate-700 font-medium">
+                            {agent.registeredByMember.name}
+                            {agent.registeredByMember.email && (
+                              <span className="text-slate-400 font-normal ml-1">({agent.registeredByMember.email})</span>
+                            )}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </>

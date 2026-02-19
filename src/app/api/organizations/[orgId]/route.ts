@@ -29,6 +29,21 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const { data: allSkills } = await supabase.from("skills").select("*");
   const skillMap = new Map((allSkills ?? []).map((s) => [s.id, s]));
 
+  // Fetch org members for registered_by lookup
+  const { data: memberRows } = await supabase
+    .from("org_members")
+    .select("id, name, email, role, status, joined_at")
+    .eq("org_id", org.id);
+  const memberMap = new Map((memberRows ?? []).map((m) => [m.id, {
+    id: m.id,
+    orgId: org.id,
+    name: m.name,
+    email: m.email,
+    role: m.role,
+    status: m.status,
+    joinedAt: m.joined_at,
+  }]));
+
   const depts: Department[] = [];
 
   for (const dept of deptRows ?? []) {
@@ -129,6 +144,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         createdAt: agent.created_at,
         humanId: agent.human_id ?? null,
         registeredBy: agent.registered_by ?? null,
+        registeredByMember: agent.registered_by ? (memberMap.get(agent.registered_by) ?? null) : null,
       });
     }
 
