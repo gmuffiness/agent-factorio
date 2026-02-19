@@ -165,14 +165,20 @@ pnpm dev
 
 ## Dashboard Pages
 
+All pages are org-scoped under `/org/[orgId]/`.
+
 | Route | Description |
 |---|---|
-| `/` | Spatial map — departments as rooms, agents as avatars |
-| `/graph` | Relationship graph — agents, skills, MCP tools as connected nodes |
-| `/agents` | Agent data table with CRUD |
-| `/departments` | Department data table with CRUD |
-| `/cost` | Cost analytics with pie/bar/trend charts |
-| `/skills` | Skill catalog with category filters |
+| `/org/[orgId]/overview` | Overview — top skills, MCP tools, featured agents, org stats |
+| `/org/[orgId]` | Spatial map — departments as rooms, agents as avatars |
+| `/org/[orgId]/graph` | Relationship graph — agents, skills, MCP tools as connected nodes |
+| `/org/[orgId]/org-chart` | Organization hierarchy chart (department tree) |
+| `/org/[orgId]/agents` | Agent data table with CRUD |
+| `/org/[orgId]/departments` | Department data table with CRUD |
+| `/org/[orgId]/cost` | Cost analytics with pie/bar/trend charts |
+| `/org/[orgId]/skills` | Skill catalog with category filters |
+| `/org/[orgId]/chat` | Chat interface with agent conversations |
+| `/org/[orgId]/settings` | Organization settings & invite code |
 
 ## Tech Stack
 
@@ -192,18 +198,28 @@ pnpm dev
 
 ```
 src/
-  app/            # Pages & API routes
-  components/     # UI components (spatial/, graph/, panels/, charts/)
-  db/             # Supabase client (supabase.ts)
-  stores/         # Zustand store
-  types/          # TypeScript types
+  app/
+    org/[orgId]/    # Org-scoped pages (overview, agents, graph, chat, etc.)
+    api/            # API routes (org-scoped + CLI endpoints)
+    login/          # Auth login page
+  components/
+    ui/             # AppShell, Sidebar, TopBar, BottomBar, Badge
+    spatial/        # Pixi.js canvas (SpatialCanvas, MapControls)
+    graph/          # React Flow (GraphPage, AgentNode, DepartmentNode, EntityNode)
+    org-chart/      # Org hierarchy chart (OrgChartPage, OrgNode)
+    panels/         # Right-side drawers (AgentDrawer, DepartmentDrawer)
+    charts/         # Recharts (CostPieChart, CostTrendChart, UsageBarChart, BudgetGauge)
+    database/       # DataTable, AgentForm, DepartmentForm
+    chat/           # ChatPage, ChatMessages, ChatInput, ConversationList
+  db/               # Supabase client (supabase.ts, supabase-server.ts)
+  stores/           # Zustand store
+  lib/              # Utils, auth helpers, invite code
+  types/            # TypeScript types
 supabase/
-  migrations/     # PostgreSQL schema migrations
-cli/              # Standalone CLI (npx agentfloor)
-skills/
-  setup/          # /agentfloor-setup wizard definition
-scripts/          # CLI tools (install, session hook)
-.claude-plugin/   # Plugin manifest
+  migrations/       # PostgreSQL schema migrations (9 files)
+cli/                # Standalone CLI (npx agentfloor)
+scripts/            # Session hook, CLI utilities
+.claude-plugin/     # Plugin manifest
 ```
 
 ## Development

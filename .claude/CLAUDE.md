@@ -57,9 +57,10 @@ npx supabase gen types typescript --linked > src/types/supabase.ts  # DB 타입 
 - Vendor colors: use `getVendorColor()` / `getVendorBgColor()` from utils, never hardcode
 
 ### Architecture
-- **Pages** go in `src/app/{route}/page.tsx` as `"use client"` components
-- **API routes** go in `src/app/api/{resource}/route.ts`
-- **Components** organized by domain: `spatial/`, `graph/`, `panels/`, `charts/`, `database/`, `ui/`
+- **Pages** go in `src/app/org/[orgId]/{route}/page.tsx` as `"use client"` components
+- **API routes** go in `src/app/api/organizations/[orgId]/{resource}/route.ts`
+- **Auth**: Supabase Auth via middleware (`src/middleware.ts`). API routes use `requireAuth()` / `requireOrgMember()` / `requireOrgAdmin()` from `src/lib/auth.ts`
+- **Components** organized by domain: `spatial/`, `graph/`, `org-chart/`, `panels/`, `charts/`, `database/`, `chat/`, `ui/`
 - **State** via Zustand store (`src/stores/app-store.ts`) — single store, no providers needed
 - **Heavy client libs** (Pixi.js, React Flow) must use `dynamic()` import with `{ ssr: false }`
 - **DB**: Supabase (PostgreSQL) via `@supabase/supabase-js` — client singleton at `src/db/supabase.ts`
@@ -69,7 +70,7 @@ npx supabase gen types typescript --linked > src/types/supabase.ts  # DB 타입 
 - `org_members`: email 기반 식별 (`email` 컬럼), Supabase Auth 연동 시 `user_id` 사용
 - `agents`: `registered_by` (FK → `org_members.id`) — 어떤 멤버가 등록했는지 추적
 - Types defined in `src/types/index.ts`
-- DB schema in `supabase/migrations/001_init.sql` (PostgreSQL)
+- DB schema across 9 migrations in `supabase/migrations/` (PostgreSQL)
 - Mock data in `src/data/mock-data.ts` for development
 
 See [docs/data-model.md](../docs/data-model.md) for detailed entity reference.
@@ -77,12 +78,14 @@ See [docs/data-model.md](../docs/data-model.md) for detailed entity reference.
 ### Organization & Agent Registration
 - `POST /api/organizations` — create org (auto-generates 6-char invite code)
 - `POST /api/organizations/join` — join org via invite code
-- `POST /api/register` — register agent with vendor, model, MCP tools, skills
+- `POST /api/cli/push` — register/update agent with vendor, model, MCP tools, skills
+- `POST /api/register` — legacy agent registration (prefer `cli/push`)
 - Session start hook (`scripts/session-start.mjs`) sends heartbeat to mark agent active
 
 ### UI Layout
-- TopBar (h-14, z-50, fixed top) → main content (pt-14 pb-10) → BottomBar (h-10, z-50, fixed bottom)
-- Drawer panels: fixed right-side, `top-14`, `z-50`, 440px wide
+- Sidebar (collapsible left, 60px/240px) + TopBar (fixed top) → main content (pt-12 pb-10, ml-16/ml-60) → BottomBar (fixed bottom)
+- Navigation links are in `Sidebar.tsx` (not TopBar)
+- Drawer panels: fixed right-side, `z-50`, 440px wide
 - Selection state: `selectAgent(id)` / `selectDepartment(id)` in store triggers drawers
 
 ### API
@@ -116,11 +119,17 @@ See [docs/cli.md](../docs/cli.md) for full CLI manual, config format, and troubl
 
 ## Pages
 
+All pages are org-scoped under `/org/[orgId]/`.
+
 | Route | Description |
 |---|---|
-| `/` | Spatial map (Pixi.js canvas) — departments as rooms, agents as avatars |
-| `/graph` | Relationship graph (React Flow) — nodes + edges showing agent/dept/skill connections |
-| `/agents` | Agent data table with CRUD |
-| `/departments` | Department data table with CRUD |
-| `/cost` | Cost analytics with pie/bar/trend charts |
-| `/skills` | Skill catalog with category filters |
+| `/org/[orgId]/overview` | Overview — top skills, MCP tools, featured agents, org stats |
+| `/org/[orgId]` | Spatial map (Pixi.js canvas) — departments as rooms, agents as avatars |
+| `/org/[orgId]/graph` | Relationship graph (React Flow) — nodes + edges showing agent/dept/skill connections |
+| `/org/[orgId]/org-chart` | Organization hierarchy chart (department tree) |
+| `/org/[orgId]/agents` | Agent data table with CRUD |
+| `/org/[orgId]/departments` | Department data table with CRUD |
+| `/org/[orgId]/cost` | Cost analytics with pie/bar/trend charts |
+| `/org/[orgId]/skills` | Skill catalog with category filters |
+| `/org/[orgId]/chat` | Chat interface with agent conversations |
+| `/org/[orgId]/settings` | Organization settings & invite code management |

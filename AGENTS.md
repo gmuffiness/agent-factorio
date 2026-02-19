@@ -18,7 +18,8 @@ AgentFloor is an AI agent fleet management dashboard. It shows an organization's
 
 - **Framework:** Next.js 16 App Router with Turbopack
 - **State:** Zustand store at `src/stores/app-store.ts`
-- **DB:** SQLite + Drizzle ORM (mock data fallback)
+- **DB:** Supabase (PostgreSQL)
+- **Auth:** Supabase Auth (middleware redirects unauthenticated to `/login`)
 - **Styling:** Tailwind CSS 4
 - **Visualizations:** Pixi.js (spatial map), React Flow (graph), Recharts (charts)
 
@@ -31,22 +32,24 @@ For detailed architecture, see [docs/architecture.md](docs/architecture.md).
 | `src/types/index.ts` | All TypeScript types (Agent, Department, Skill, etc.) |
 | `src/stores/app-store.ts` | Zustand store — state + actions + computed helpers |
 | `src/lib/utils.ts` | Formatting, vendor/status color helpers, `cn()` |
-| `src/data/mock-data.ts` | Mock data used during development |
-| `src/db/schema.ts` | Drizzle ORM schema (SQLite) |
-| `src/components/ui/AppShell.tsx` | Root layout: TopBar + main + BottomBar + Drawers |
-| `src/components/ui/TopBar.tsx` | Navigation bar with route links |
+| `src/lib/auth.ts` | Auth helpers: `requireAuth()`, `requireOrgMember()`, `requireOrgAdmin()` |
+| `src/db/supabase.ts` | Supabase client singleton (service role, server-side) |
+| `src/components/ui/AppShell.tsx` | Root layout: Sidebar + TopBar + main + BottomBar + Drawers |
+| `src/components/ui/Sidebar.tsx` | Collapsible left navigation with route links |
+| `src/middleware.ts` | Auth gating, session refresh, legacy route redirects |
 
 ## Common Tasks
 
 ### Adding a new page
-1. Create `src/app/{route}/page.tsx` with `"use client"` directive
-2. Add nav link to `navLinks` array in `src/components/ui/TopBar.tsx`
+1. Create `src/app/org/[orgId]/{route}/page.tsx` with `"use client"` directive
+2. Add nav link to `navLinks` array in `src/components/ui/Sidebar.tsx`
 3. If using heavy client libs, wrap with `dynamic(() => import(...), { ssr: false })`
 
 ### Adding a new API route
-1. Create `src/app/api/{resource}/route.ts`
+1. Create `src/app/api/organizations/[orgId]/{resource}/route.ts`
 2. Export async functions: `GET`, `POST`, `PATCH`, `DELETE`
-3. Use `NextResponse.json()` for responses
+3. Use `requireOrgMember(orgId)` from `src/lib/auth.ts` for auth
+4. Use `NextResponse.json()` for responses
 
 ### Adding a new component
 1. Place in the appropriate `src/components/{domain}/` directory
@@ -68,8 +71,8 @@ selectDepartment("dept-id"); // Opens DepartmentDrawer
 
 ### Working with the database
 ```bash
-pnpm db:push    # Apply schema changes
-pnpm db:seed    # Seed with sample data
+npx supabase migration new <name>   # Create new migration
+npx supabase db push                # Apply migrations to remote DB
 ```
 
 ## Data Model
@@ -83,6 +86,7 @@ Three vendor types: `anthropic` (orange), `openai` (green), `google` (blue).
 ## Gotchas
 
 - **SSR:** Pixi.js and React Flow crash on server — always use `dynamic()` with `ssr: false`
-- **Z-index:** TopBar is `z-50` fixed. Drawers are also `z-50` but start at `top-14` (below TopBar)
+- **Layout:** Collapsible Sidebar (left, 60px/240px) + TopBar (top). Drawers are `z-50` fixed right-side panels
 - **Drawer panels:** Opening a drawer clears the other selection (`selectAgent` clears `selectedDepartmentId` and vice versa)
-- **Mock data:** The store initializes with `mockOrganization` from `src/data/mock-data.ts`. API calls overlay this on success, fall back silently on failure
+- **Auth:** All `/org/*` routes require Supabase Auth. Public routes: `/`, `/login`, `/auth/callback`, `/api/cli/*`, `/api/register`
+- **Org-scoped routes:** All pages are under `/org/[orgId]/...`, all API routes under `/api/organizations/[orgId]/...`

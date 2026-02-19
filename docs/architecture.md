@@ -56,47 +56,81 @@ Each registered agent's **git repo, MCP servers, skills, plugins, vendor/model i
 src/
   app/                    # Next.js App Router pages & API routes
     api/
-      organization/       # GET full org tree
       organizations/      # CRUD organizations + invite code join
-      agents/             # CRUD agents
-      departments/        # CRUD departments
-      graph/              # GET pre-computed graph nodes/edges
-      register/           # Agent self-registration
-    graph/                # /graph page (React Flow)
-    agents/               # /agents page (data table)
-    departments/          # /departments page (data table)
-    cost/                 # /cost page (charts)
-    skills/               # /skills page (catalog)
+        [orgId]/
+          route.ts        # GET full org tree
+          agents/         # CRUD agents
+          departments/    # CRUD departments
+          members/        # CRUD org members
+          graph/          # GET pre-computed graph nodes/edges
+          chat/           # Chat messages
+          conversations/  # Chat conversations
+          announcements/  # Org announcements
+          humans/         # Human users
+          invite-code/    # Generate new invite code
+        join/             # Join org via invite code
+      cli/                # Auth-free CLI endpoints (login, push, announcements)
+      register/           # Legacy agent self-registration
+    org/[orgId]/          # Org-scoped pages
+      overview/           # Overview page (top skills, featured agents)
+      agents/             # Agent data table with CRUD
+      departments/        # Department data table with CRUD
+      graph/              # Relationship graph (React Flow)
+      org-chart/          # Organization hierarchy chart
+      cost/               # Cost analytics (charts)
+      skills/             # Skill catalog
+      chat/               # Chat interface
+      settings/           # Org settings & invite code
+    login/                # Auth login page (Supabase Auth)
+    join-auto/[code]/     # Auto-join via invite link
+    auth/callback/        # OAuth callback
   components/
-    ui/                   # AppShell, TopBar, BottomBar, Badge
-    spatial/              # Pixi.js canvas (SpatialCanvas, DepartmentRoom, AgentAvatar)
+    ui/                   # AppShell, Sidebar, TopBar, BottomBar, Badge, AnnouncementDropdown
+    spatial/              # Pixi.js canvas (SpatialCanvas, MapControls)
     graph/                # React Flow graph (GraphPage, DepartmentNode, AgentNode, EntityNode)
+    org-chart/            # Org hierarchy chart (OrgChartPage, OrgNode)
     panels/               # Right-side drawers (AgentDrawer, DepartmentDrawer)
-    charts/               # Recharts wrappers (CostPieChart, CostTrendChart, UsageBarChart)
-    database/             # DataTable, forms
+    charts/               # Recharts wrappers (CostPieChart, CostTrendChart, UsageBarChart, BudgetGauge)
+    database/             # DataTable, AgentForm, DepartmentForm
+    chat/                 # ChatPage, ChatMessages, ChatInput, ConversationList, AgentSelector, MessageBubble
   stores/
-    app-store.ts          # Zustand store (selection, view mode, org data)
+    app-store.ts          # Zustand store (selection, view mode, org data, announcements)
   types/
     index.ts              # Shared TypeScript types
   lib/
     utils.ts              # Formatting, vendor/status colors, cn()
+    auth.ts               # requireAuth(), requireOrgMember(), requireOrgAdmin()
+    invite-code.ts        # generateInviteCode()
+  hooks/
+    useOrgId.ts           # Extract orgId from URL params
   data/
     mock-data.ts          # Mock organization data for development
   db/
-    supabase.ts           # Supabase client singleton
-    schema.ts             # Legacy Drizzle schema (type reference)
-    index.ts              # Legacy SQLite connection (deprecated)
+    supabase.ts           # Supabase client singleton (service role)
+    supabase-server.ts    # Server-side Supabase helper (cookie-based auth)
+    supabase-browser.ts   # Browser-side Supabase helper
     seed.ts               # Database seeder
+  middleware.ts           # Auth gating, session refresh, legacy route redirects
 supabase/
-  migrations/
-    001_init.sql          # PostgreSQL schema (run in Supabase SQL editor)
+  migrations/             # PostgreSQL schema (9 migrations)
+    001_init.sql          # Core tables: organizations, departments, agents, skills, etc.
+    002_agent_resources.sql
+    003_humans.sql
+    004_chat.sql
+    005_auth_user_id.sql
+    006_member_email.sql
+    007_announcements.sql
+    008_agent_registered_by.sql
+    009_department_hierarchy.sql
+cli/                      # Standalone CLI (npx agentfloor)
+  bin.mjs                 # Entry point
+  commands/               # login, push, status, whoami, logout
+  lib/                    # api, config, detect, prompt, log
 skills/
   setup/
     SKILL.md              # /agentfloor:setup wizard definition
 scripts/
   session-start.mjs       # Session start hook (heartbeat + config check)
-  lib/
-    stdin.mjs             # CLI prompt utilities
 hooks/
   hooks.json              # Claude Code hook configuration
 .claude-plugin/
@@ -114,8 +148,12 @@ hooks/
 
 ## Key Patterns
 
+- **Auth**: Supabase Auth with middleware (`src/middleware.ts`). Redirects unauthenticated users to `/login`. API routes use `requireAuth()` / `requireOrgMember()` / `requireOrgAdmin()` from `src/lib/auth.ts`
+- **Org-scoped routes**: All pages under `/org/[orgId]/...`, all API routes under `/api/organizations/[orgId]/...`
+- **UI Layout**: Collapsible Sidebar (left, 60px collapsed / 240px expanded) + TopBar (top) + BottomBar (bottom). Main content shifts with sidebar via `ml-16` / `ml-60`
 - **Dynamic imports with `ssr: false`**: Pixi.js and React Flow components are client-only
 - **Vendor color system**: Consistent color coding via `getVendorColor()` / `getVendorBgColor()` (orange=Anthropic, green=OpenAI, blue=Google)
-- **Drawer panels**: Fixed right-side panels at `z-50`, positioned below TopBar (`top-14`)
+- **Drawer panels**: Fixed right-side panels at `z-50`, positioned below TopBar
 - **Shared nodes in graph**: Skills/MCP tools/plugins used by multiple agents appear as a single node with converging edges
 - **Supabase service role**: All DB access uses the service role key (server-side only), RLS enabled but bypassed by service role
+- **Public routes**: `/`, `/login`, `/auth/callback`, `/api/cli/*`, `/api/register` — no auth required
