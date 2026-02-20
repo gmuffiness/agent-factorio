@@ -5,13 +5,14 @@
  * and installation URL construction for the GitHub App OAuth flow.
  */
 
+import crypto from "node:crypto";
 import { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Generate a JWT for GitHub App authentication.
- * Uses the App's private key to sign a short-lived token.
+ * Uses the App's private key to sign a short-lived token via Node.js crypto.
  */
-export async function generateJWT(): Promise<string> {
+export function generateJWT(): string {
   const appId = process.env.GITHUB_APP_ID;
   const privateKey = process.env.GITHUB_APP_PRIVATE_KEY;
 
@@ -23,49 +24,27 @@ export async function generateJWT(): Promise<string> {
   const pem = privateKey.replace(/\\n/g, "\n");
 
   const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    iat: now - 60, // issued 60s ago to account for clock drift
-    exp: now + 10 * 60, // 10 minute expiration (max allowed)
-    iss: appId,
-  };
 
-  // Import the RSA private key
-  const pemBody = pem
-    .replace(/-----BEGIN RSA PRIVATE KEY-----/, "")
-    .replace(/-----END RSA PRIVATE KEY-----/, "")
-    .replace(/\s/g, "");
-  const binaryKey = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
-
-  const key = await crypto.subtle.importKey(
-    "pkcs8",
-    binaryKey,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-
-  // Build JWT
   const header = base64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const body = base64url(JSON.stringify(payload));
-  const signingInput = `${header}.${body}`;
-
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    key,
-    new TextEncoder().encode(signingInput)
+  const payload = base64url(
+    JSON.stringify({
+      iat: now - 60,
+      exp: now + 10 * 60,
+      iss: appId,
+    })
   );
 
-  const sig = base64url(signature);
-  return `${header}.${body}.${sig}`;
+  const signingInput = `${header}.${payload}`;
+  const signature = crypto.createSign("RSA-SHA256").update(signingInput).sign(pem);
+
+  return `${header}.${payload}.${base64url(signature)}`;
 }
 
-function base64url(input: string | ArrayBuffer): string {
-  let b64: string;
-  if (typeof input === "string") {
-    b64 = btoa(input);
-  } else {
-    b64 = btoa(String.fromCharCode(...new Uint8Array(input)));
-  }
+function base64url(input: string | Buffer): string {
+  const b64 =
+    typeof input === "string"
+      ? Buffer.from(input).toString("base64")
+      : input.toString("base64");
   return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
@@ -76,7 +55,7 @@ function base64url(input: string | ArrayBuffer): string {
 export async function getInstallationToken(
   installationId: number | bigint
 ): Promise<string> {
-  const jwt = await generateJWT();
+  const jwt = generateJWT();
 
   const res = await fetch(
     `https://api.github.com/app/installations/${installationId}/access_tokens`,
@@ -107,7 +86,7 @@ export async function getInstallationToken(
 export async function getInstallationInfo(
   installationId: number | bigint
 ): Promise<{ account_login: string; account_type: string }> {
-  const jwt = await generateJWT();
+  const jwt = generateJWT();
 
   const res = await fetch(
     `https://api.github.com/app/installations/${installationId}`,
