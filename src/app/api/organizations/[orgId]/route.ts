@@ -6,10 +6,22 @@ import type { Organization, Department, Agent, Skill, Plugin, McpTool, AgentReso
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
-  const memberCheck = await requireOrgMember(orgId);
-  if (memberCheck instanceof NextResponse) return memberCheck;
-
   const supabase = getSupabase();
+
+  // Allow unauthenticated access for public organizations
+  const memberCheck = await requireOrgMember(orgId);
+  if (memberCheck instanceof NextResponse) {
+    // Check if org is public before rejecting
+    const { data: orgCheck } = await supabase
+      .from("organizations")
+      .select("visibility")
+      .eq("id", orgId)
+      .single();
+
+    if (!orgCheck || orgCheck.visibility !== "public") {
+      return memberCheck;
+    }
+  }
 
   const { data: org, error: orgError } = await supabase
     .from("organizations")

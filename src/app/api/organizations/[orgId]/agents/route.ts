@@ -5,8 +5,20 @@ import { requireOrgMember } from "@/lib/auth";
 export async function GET(request: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
+  // Allow unauthenticated access for public organizations
   const memberCheck = await requireOrgMember(orgId);
-  if (memberCheck instanceof NextResponse) return memberCheck;
+  if (memberCheck instanceof NextResponse) {
+    const supabaseCheck = getSupabase();
+    const { data: orgCheck } = await supabaseCheck
+      .from("organizations")
+      .select("visibility")
+      .eq("id", orgId)
+      .single();
+
+    if (!orgCheck || orgCheck.visibility !== "public") {
+      return memberCheck;
+    }
+  }
 
   const { searchParams } = new URL(request.url);
   const dept = searchParams.get("dept");

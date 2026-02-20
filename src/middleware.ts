@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 
 const OLD_ROUTES = ["/agents", "/departments", "/graph", "/cost", "/skills"];
 const PUBLIC_ROUTES = ["/login", "/auth/callback", "/cli/", "/"];
-const PUBLIC_API_ROUTES = ["/api/register", "/api/cli/"];
+const PUBLIC_API_ROUTES = ["/api/register", "/api/cli/", "/api/public/"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -51,7 +51,8 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // Auth gate: redirect unauthenticated users to /login
-  if (!user) {
+  // Allow /org/ and /api/organizations/ routes through for public org viewing (API handlers check visibility)
+  if (!user && !pathname.startsWith("/org/") && !pathname.startsWith("/api/organizations/")) {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
   }
