@@ -5,21 +5,6 @@ import { requireOrgMember } from "@/lib/auth";
 export async function GET(request: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
-  // Check visibility first to avoid slow auth roundtrip for public orgs
-  const supabaseCheck = getSupabase();
-  const { data: orgCheck } = await supabaseCheck
-    .from("organizations")
-    .select("visibility")
-    .eq("id", orgId)
-    .single();
-
-  const isPublic = orgCheck?.visibility === "public";
-
-  if (!isPublic) {
-    const memberCheck = await requireOrgMember(orgId);
-    if (memberCheck instanceof NextResponse) return memberCheck;
-  }
-
   const { searchParams } = new URL(request.url);
   const dept = searchParams.get("dept");
   const vendor = searchParams.get("vendor");
@@ -27,11 +12,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const supabase = getSupabase();
 
-  // Get departments belonging to this org
-  const { data: orgDepts } = await supabase
-    .from("departments")
-    .select("id")
-    .eq("org_id", orgId);
+  // Fetch org visibility + departments in parallel (merged to save a roundtrip)
+  const [{ data: orgCheck }, { data: orgDepts }] = await Promise.all([
+    supabase.from("organizations").select("visibility").eq("id", orgId).single(),
+    supabase.from("departments").select("id").eq("org_id", orgId),
+  ]);
+
+  // Auth check — skip for public orgs
+  if (!orgCheck || orgCheck.visibility !== "public") {
+    const memberCheck = await requireOrgMember(orgId);
+    if (memberCheck instanceof NextResponse) return memberCheck;
+  }
 
   const deptIds = (orgDepts ?? []).map((d) => d.id);
   if (deptIds.length === 0) {

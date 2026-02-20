@@ -8,40 +8,28 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   const supabase = getSupabase();
 
-  // Check visibility first to avoid slow auth roundtrip for public orgs
-  const { data: orgCheck } = await supabase
-    .from("organizations")
-    .select("visibility")
-    .eq("id", orgId)
-    .single();
-
-  const isPublic = orgCheck?.visibility === "public";
-
-  if (!isPublic) {
-    const memberCheck = await requireOrgMember(orgId);
-    if (memberCheck instanceof NextResponse) return memberCheck;
-  }
-
-  const { data: org, error: orgError } = await supabase
-    .from("organizations")
-    .select("*")
-    .eq("id", orgId)
-    .single();
+  // Fetch org + deps in one parallel batch (visibility check merged with org select)
+  const [
+    { data: org, error: orgError },
+    { data: deptRows },
+    { data: allSkills },
+    { data: memberRows },
+  ] = await Promise.all([
+    supabase.from("organizations").select("*").eq("id", orgId).single(),
+    supabase.from("departments").select("*").eq("org_id", orgId),
+    supabase.from("skills").select("*"),
+    supabase.from("org_members").select("id, name, email, role, status, joined_at").eq("org_id", orgId),
+  ]);
 
   if (orgError || !org) {
     return NextResponse.json({ error: "Organization not found" }, { status: 404 });
   }
 
-  // Bulk queries — all parallel, no N+1
-  const [
-    { data: deptRows },
-    { data: allSkills },
-    { data: memberRows },
-  ] = await Promise.all([
-    supabase.from("departments").select("*").eq("org_id", org.id),
-    supabase.from("skills").select("*"),
-    supabase.from("org_members").select("id, name, email, role, status, joined_at").eq("org_id", org.id),
-  ]);
+  // Auth check — skip for public orgs (avoids slow Supabase Auth roundtrip)
+  if (org.visibility !== "public") {
+    const memberCheck = await requireOrgMember(orgId);
+    if (memberCheck instanceof NextResponse) return memberCheck;
+  }
 
   const skillMap = new Map((allSkills ?? []).map((s) => [s.id, s]));
   const memberMap = new Map((memberRows ?? []).map((m) => [m.id, {
