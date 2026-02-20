@@ -8,19 +8,18 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   const supabase = getSupabase();
 
-  // Allow unauthenticated access for public organizations
-  const memberCheck = await requireOrgMember(orgId);
-  if (memberCheck instanceof NextResponse) {
-    // Check if org is public before rejecting
-    const { data: orgCheck } = await supabase
-      .from("organizations")
-      .select("visibility")
-      .eq("id", orgId)
-      .single();
+  // Check visibility first to avoid slow auth roundtrip for public orgs
+  const { data: orgCheck } = await supabase
+    .from("organizations")
+    .select("visibility")
+    .eq("id", orgId)
+    .single();
 
-    if (!orgCheck || orgCheck.visibility !== "public") {
-      return memberCheck;
-    }
+  const isPublic = orgCheck?.visibility === "public";
+
+  if (!isPublic) {
+    const memberCheck = await requireOrgMember(orgId);
+    if (memberCheck instanceof NextResponse) return memberCheck;
   }
 
   const { data: org, error: orgError } = await supabase

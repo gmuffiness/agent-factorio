@@ -9,10 +9,13 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip auth for public routes (exact match for "/" to avoid matching everything)
+  // Also skip for /org/ and /api/organizations/ — API handlers check visibility themselves
   if (
     pathname === "/" ||
     PUBLIC_ROUTES.filter((r) => r !== "/").some((r) => pathname.startsWith(r)) ||
-    PUBLIC_API_ROUTES.some((r) => pathname.startsWith(r))
+    PUBLIC_API_ROUTES.some((r) => pathname.startsWith(r)) ||
+    pathname.startsWith("/org/") ||
+    pathname.startsWith("/api/organizations/")
   ) {
     return NextResponse.next();
   }
@@ -51,8 +54,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // Auth gate: redirect unauthenticated users to /login
-  // Allow /org/ and /api/organizations/ routes through for public org viewing (API handlers check visibility)
-  if (!user && !pathname.startsWith("/org/") && !pathname.startsWith("/api/organizations/")) {
+  if (!user) {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
   }

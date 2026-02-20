@@ -143,6 +143,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     ) {
       return; // already fresh
     }
+    // Clear stale data immediately when switching orgs
+    if (state.currentOrgId !== orgId) {
+      set({ isLoaded: false, currentOrgId: orgId });
+    }
     try {
       const res = await fetch(`/api/organizations/${orgId}`);
       if (res.ok) {
