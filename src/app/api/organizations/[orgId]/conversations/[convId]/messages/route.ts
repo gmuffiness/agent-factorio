@@ -14,7 +14,7 @@ export async function GET(
 
   const { data, error } = await supabase
     .from("messages")
-    .select("id, conversation_id, role, content, created_at")
+    .select("id, conversation_id, role, content, created_at, agent_id, agents(name, vendor)")
     .eq("conversation_id", convId)
     .order("created_at", { ascending: true });
 
@@ -22,13 +22,19 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const messages = (data ?? []).map((m) => ({
-    id: m.id,
-    conversationId: m.conversation_id,
-    role: m.role,
-    content: m.content,
-    createdAt: m.created_at,
-  }));
+  const messages = (data ?? []).map((m: Record<string, unknown>) => {
+    const agent = m.agents as { name: string; vendor: string } | null;
+    return {
+      id: m.id as string,
+      conversationId: m.conversation_id as string,
+      role: m.role as string,
+      content: m.content as string,
+      createdAt: m.created_at as string,
+      agentId: (m.agent_id as string) ?? null,
+      agentName: agent?.name ?? null,
+      agentVendor: agent?.vendor ?? null,
+    };
+  });
 
   return NextResponse.json(messages);
 }
