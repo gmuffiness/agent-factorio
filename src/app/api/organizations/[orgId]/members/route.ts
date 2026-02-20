@@ -10,7 +10,7 @@ export async function GET(
   const authResult = await requireOrgMember(orgId);
   if (authResult instanceof NextResponse) return authResult;
 
-  const { role: currentUserRole } = authResult;
+  const { user, role: currentUserRole } = authResult;
   const supabase = getSupabase();
 
   const { data: members, error } = await supabase
@@ -52,9 +52,13 @@ export async function GET(
     joinedAt: m.joined_at,
   }));
 
+  // Find current user's member ID
+  const currentMember = (members ?? []).find((m) => m.user_id === user.id);
+
   return NextResponse.json({
     members: formattedMembers,
     currentUserRole,
+    currentMemberId: currentMember?.id ?? null,
     inviteCode,
   });
 }

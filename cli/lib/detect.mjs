@@ -137,6 +137,54 @@ export function detectClaudeMd(projectRoot) {
 }
 
 /**
+ * Detect AI service subscriptions from environment and local tooling
+ * @returns {{ name: string, detectionSource: string }[]}
+ */
+export function detectSubscriptions() {
+  const subs = [];
+
+  // Claude Code — always true when running inside Claude Code
+  if (process.env.CLAUDE_CODE_VERSION) {
+    subs.push({ name: "Claude Code", detectionSource: "env_var" });
+  }
+
+  // API keys
+  if (process.env.ANTHROPIC_API_KEY) {
+    subs.push({ name: "Anthropic API", detectionSource: "env_var" });
+  }
+  if (process.env.OPENAI_API_KEY) {
+    subs.push({ name: "OpenAI API", detectionSource: "env_var" });
+  }
+
+  // Cursor
+  const cursorDir = path.join(process.env.HOME || "", ".cursor");
+  if (fs.existsSync(cursorDir)) {
+    subs.push({ name: "Cursor", detectionSource: "cli_push" });
+  }
+
+  // GitHub Copilot
+  const vscodeExtDir = path.join(process.env.HOME || "", ".vscode", "extensions");
+  try {
+    if (fs.existsSync(vscodeExtDir)) {
+      const entries = fs.readdirSync(vscodeExtDir);
+      if (entries.some((e) => e.startsWith("github.copilot"))) {
+        subs.push({ name: "GitHub Copilot", detectionSource: "cli_push" });
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // Windsurf
+  const windsurfDir = path.join(process.env.HOME || "", ".windsurf");
+  if (fs.existsSync(windsurfDir)) {
+    subs.push({ name: "Windsurf", detectionSource: "cli_push" });
+  }
+
+  return subs;
+}
+
+/**
  * Run all detections and return a summary
  * @param {string} [projectRoot]
  */
@@ -147,6 +195,7 @@ export function detectAll(projectRoot) {
     skills: detectSkills(root),
     mcpServers: detectMcpServers(root),
     claudeMd: detectClaudeMd(root),
+    subscriptions: detectSubscriptions(),
   };
 }
 

@@ -33,6 +33,9 @@ export async function pushCommand() {
   label("CLAUDE.md", detected.claudeMd.found
     ? `found (${detected.claudeMd.path})`
     : "(not found)");
+  label("Subscriptions", detected.subscriptions.length > 0
+    ? `${detected.subscriptions.map((s) => s.name).join(", ")} (auto-detected)`
+    : "(none)");
   console.log();
 
   // 3. Agent name, vendor, model
@@ -72,6 +75,11 @@ export async function pushCommand() {
   // Attach git repo URL
   if (detected.git.repoUrl) {
     body.repoUrl = detected.git.repoUrl;
+  }
+
+  // Attach detected subscriptions
+  if (detected.subscriptions.length > 0) {
+    body.detectedSubscriptions = detected.subscriptions;
   }
 
   // Attach CLAUDE.md as context

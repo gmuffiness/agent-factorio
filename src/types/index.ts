@@ -119,14 +119,24 @@ export interface AgentContext {
   updatedAt: string;
 }
 
+export interface ConversationParticipant {
+  id: string;
+  conversationId: string;
+  agentId: string;
+  agentName?: string;
+  agentVendor?: Vendor;
+  joinedAt: string;
+}
+
 export interface Conversation {
   id: string;
   orgId: string;
-  agentId: string;
+  agentId: string | null;
   title: string;
   createdAt: string;
   updatedAt: string;
   lastMessage?: string;
+  participants?: ConversationParticipant[];
 }
 
 export interface Message {
@@ -135,6 +145,9 @@ export interface Message {
   role: "user" | "assistant" | "system";
   content: string;
   createdAt: string;
+  agentId?: string | null;
+  agentName?: string | null;
+  agentVendor?: Vendor | null;
 }
 
 export type AnnouncementTargetType = "all" | "department" | "agent";
@@ -154,6 +167,43 @@ export interface Announcement {
   ackCount?: number;
   targetCount?: number;
 }
+
+export type CostType = "subscription" | "api" | "hybrid";
+export type BillingCycle = "monthly" | "annual" | "pay_as_you_go";
+export type ServiceCategory = "ai_assistant" | "code_editor" | "image_gen" | "api" | "other";
+
+export interface MemberSubscription {
+  id: string;
+  memberId: string;
+  orgId: string;
+  serviceName: string;
+  serviceCategory: ServiceCategory;
+  costType: CostType;
+  monthlyAmount: number;
+  currency: string;
+  billingCycle: BillingCycle;
+  autoDetected: boolean;
+  detectionSource: string | null;
+  isActive: boolean;
+  startedAt: string | null;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const SERVICE_PRESETS = [
+  { name: "Claude Max", category: "ai_assistant" as const, costType: "subscription" as const, defaultAmount: 200, billingCycle: "monthly" as const },
+  { name: "Claude Pro", category: "ai_assistant" as const, costType: "subscription" as const, defaultAmount: 20, billingCycle: "monthly" as const },
+  { name: "ChatGPT Plus", category: "ai_assistant" as const, costType: "subscription" as const, defaultAmount: 20, billingCycle: "monthly" as const },
+  { name: "ChatGPT Pro", category: "ai_assistant" as const, costType: "subscription" as const, defaultAmount: 200, billingCycle: "monthly" as const },
+  { name: "Cursor Pro", category: "code_editor" as const, costType: "subscription" as const, defaultAmount: 20, billingCycle: "monthly" as const },
+  { name: "GitHub Copilot", category: "code_editor" as const, costType: "subscription" as const, defaultAmount: 10, billingCycle: "monthly" as const },
+  { name: "Windsurf Pro", category: "code_editor" as const, costType: "subscription" as const, defaultAmount: 15, billingCycle: "monthly" as const },
+  { name: "Midjourney", category: "image_gen" as const, costType: "subscription" as const, defaultAmount: 30, billingCycle: "monthly" as const },
+  { name: "Anthropic API", category: "api" as const, costType: "api" as const, defaultAmount: 0, billingCycle: "pay_as_you_go" as const },
+  { name: "OpenAI API", category: "api" as const, costType: "api" as const, defaultAmount: 0, billingCycle: "pay_as_you_go" as const },
+  { name: "Google AI API", category: "api" as const, costType: "api" as const, defaultAmount: 0, billingCycle: "pay_as_you_go" as const },
+] as const;
 
 export type OrgMemberRole = "admin" | "member";
 export type OrgMemberStatus = "active" | "pending";

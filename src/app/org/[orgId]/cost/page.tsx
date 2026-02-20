@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   BarChart,
@@ -17,7 +17,15 @@ import { formatCurrency, getVendorColor, getVendorLabel, cn } from "@/lib/utils"
 import CostPieChart from "@/components/charts/CostPieChart";
 import CostTrendChart from "@/components/charts/CostTrendChart";
 import BudgetGauge from "@/components/charts/BudgetGauge";
-import type { MonthlyCost, Vendor } from "@/types";
+import SubscriptionBreakdown from "@/components/charts/SubscriptionBreakdown";
+import type { MonthlyCost, Vendor, ServiceCategory } from "@/types";
+
+interface CostSummary {
+  totalSubscriptionCost: number;
+  byService: Array<{ serviceName: string; amount: number; memberCount: number }>;
+  byMember: Array<{ memberId: string; name: string; email: string | null; totalCost: number; subscriptions: unknown[] }>;
+  byCategory: Record<ServiceCategory, number>;
+}
 
 export default function CostPage() {
   const orgId = useOrgId();
@@ -25,6 +33,14 @@ export default function CostPage() {
   const getTotalMonthlyCost = useAppStore((s) => s.getTotalMonthlyCost);
   const getVendorCostBreakdown = useAppStore((s) => s.getVendorCostBreakdown);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [costSummary, setCostSummary] = useState<CostSummary | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/organizations/${orgId}/costs`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (data) setCostSummary(data); })
+      .catch(() => {});
+  }, [orgId]);
 
   const totalCost = getTotalMonthlyCost();
   const vendorBreakdown = getVendorCostBreakdown();
@@ -392,6 +408,57 @@ export default function CostPage() {
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* Subscription Costs */}
+        {costSummary && (
+          <div className="rounded-xl bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Subscription Costs
+            </h2>
+            <SubscriptionBreakdown
+              byService={costSummary.byService}
+              totalCost={costSummary.totalSubscriptionCost}
+            />
+          </div>
+        )}
+
+        {/* Member Cost Breakdown */}
+        {costSummary && costSummary.byMember.length > 0 && (
+          <div className="rounded-xl bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Cost by Member
+            </h2>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-gray-500">
+                  <th className="pb-2">Member</th>
+                  <th className="pb-2">Services</th>
+                  <th className="pb-2 text-right">Monthly Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {costSummary.byMember.map((member) => (
+                  <tr key={member.memberId} className="border-b last:border-0">
+                    <td className="py-2">
+                      <p className="font-medium text-gray-900">{member.name}</p>
+                      {member.email && (
+                        <p className="text-xs text-gray-400">{member.email}</p>
+                      )}
+                    </td>
+                    <td className="py-2 text-gray-500">
+                      {(member.subscriptions as Array<{ serviceName: string }>)
+                        .map((s) => s.serviceName)
+                        .join(", ")}
+                    </td>
+                    <td className="py-2 text-right font-medium">
+                      {formatCurrency(member.totalCost)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Cost Trend */}
         <div className="rounded-xl bg-white p-6 shadow-sm">

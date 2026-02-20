@@ -2,6 +2,48 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/db/supabase";
 
 /**
+ * Upsert auto-detected subscriptions for a member.
+ * Skips if subscription already exists (same member + service name).
+ */
+async function upsertDetectedSubscriptions(
+  supabase: ReturnType<typeof getSupabase>,
+  memberId: string,
+  orgId: string,
+  subscriptions: Array<{ name: string; detectionSource?: string }>,
+) {
+  const now = new Date().toISOString();
+  for (const sub of subscriptions) {
+    const { data: existing } = await supabase
+      .from("member_subscriptions")
+      .select("id")
+      .eq("member_id", memberId)
+      .eq("service_name", sub.name)
+      .eq("org_id", orgId)
+      .maybeSingle();
+
+    if (existing) continue;
+
+    await supabase.from("member_subscriptions").insert({
+      id: `sub-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      member_id: memberId,
+      org_id: orgId,
+      service_name: sub.name,
+      service_category: "other",
+      cost_type: "subscription",
+      monthly_amount: 0,
+      currency: "USD",
+      billing_cycle: "monthly",
+      auto_detected: true,
+      detection_source: sub.detectionSource || "cli_push",
+      is_active: true,
+      notes: "",
+      created_at: now,
+      updated_at: now,
+    });
+  }
+}
+
+/**
  * Upsert skill names into the skills table and link them to an agent.
  * - For each skill name, find existing or create new skill row.
  * - Replace all agent_skills links for the agent.
@@ -102,6 +144,7 @@ export async function POST(request: NextRequest) {
     context,
     memberId,
     repoUrl,
+    detectedSubscriptions,
   } = body;
 
   if (!agentName || !vendor || !model || !orgId) {
@@ -244,6 +287,11 @@ export async function POST(request: NextRequest) {
         await upsertRepoUrl(supabase, agentId, repoUrl);
       }
 
+      // Upsert detected subscriptions
+      if (detectedSubscriptions?.length && memberId) {
+        await upsertDetectedSubscriptions(supabase, memberId, orgId, detectedSubscriptions);
+      }
+
       return NextResponse.json({
         id: agentId,
         updated: true,
@@ -355,6 +403,11 @@ export async function POST(request: NextRequest) {
   // Save git repo URL
   if (repoUrl) {
     await upsertRepoUrl(supabase, newAgentId, repoUrl);
+  }
+
+  // Upsert detected subscriptions
+  if (detectedSubscriptions?.length && memberId) {
+    await upsertDetectedSubscriptions(supabase, memberId, orgId, detectedSubscriptions);
   }
 
   return NextResponse.json(

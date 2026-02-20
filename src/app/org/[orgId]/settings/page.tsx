@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/database/DataTable";
+import SubscriptionManager from "@/components/settings/SubscriptionManager";
 import { useOrgId } from "@/hooks/useOrgId";
 import { useAppStore } from "@/stores/app-store";
 import { cn } from "@/lib/utils";
@@ -65,6 +66,8 @@ export default function SettingsPage() {
 
   const isAdmin = currentUserRole === "admin";
 
+  const [currentMemberId, setCurrentMemberId] = useState<string | null>(null);
+
   const fetchData = useCallback(async () => {
     const membersRes = await fetch(`/api/organizations/${orgId}/members`);
     if (!membersRes.ok) return;
@@ -72,6 +75,7 @@ export default function SettingsPage() {
     setMembers(membersData.members);
     setCurrentUserRole(membersData.currentUserRole);
     setInviteCode(membersData.inviteCode);
+    setCurrentMemberId(membersData.currentMemberId ?? null);
 
     setLoading(false);
   }, [orgId]);
@@ -395,6 +399,15 @@ export default function SettingsPage() {
           )}
         </div>
       )}
+
+      {/* My Subscriptions */}
+      <div className="mb-8 rounded-lg border border-slate-700 bg-slate-800/50 p-6">
+        <h2 className="mb-1 text-lg font-semibold text-white">My Subscriptions</h2>
+        <p className="mb-4 text-sm text-slate-400">
+          Manage your AI service subscriptions. Auto-detected services from CLI push will appear here.
+        </p>
+        <SubscriptionManager orgId={orgId} memberId={currentMemberId} isAdmin={isAdmin} />
+      </div>
 
       {/* Members Table */}
       <div className="mb-8">
