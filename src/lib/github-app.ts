@@ -144,8 +144,9 @@ export function getInstallationUrl(orgId: string): string {
     throw new Error("Missing GITHUB_APP_CLIENT_ID");
   }
 
+  const appSlug = process.env.GITHUB_APP_SLUG || "agentfloor";
   const state = encodeURIComponent(orgId);
-  return `https://github.com/apps/agentfloor/installations/new?state=${state}`;
+  return `https://github.com/apps/${appSlug}/installations/new?state=${state}`;
 }
 
 /**
