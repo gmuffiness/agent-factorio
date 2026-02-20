@@ -180,6 +180,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         humanId: agent.human_id ?? null,
         registeredBy: agent.registered_by ?? null,
         registeredByMember: agent.registered_by ? (memberMap.get(agent.registered_by) ?? null) : null,
+        runtimeType: agent.runtime_type ?? "api",
+        gatewayUrl: agent.gateway_url ?? "",
       };
     });
 
@@ -211,6 +213,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     id: org.id,
     name: org.name,
     totalBudget: org.total_budget,
+    visibility: org.visibility ?? "private",
     departments: depts,
   };
 
@@ -225,11 +228,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const adminCheck = await requireOrgAdmin(orgId);
   if (adminCheck instanceof NextResponse) return adminCheck;
 
-  const body = await request.json() as { name?: string; totalBudget?: number };
+  const body = await request.json() as { name?: string; totalBudget?: number; visibility?: string };
 
   const updates: Record<string, unknown> = {};
   if (body.name !== undefined) updates.name = body.name;
   if (body.totalBudget !== undefined) updates.total_budget = body.totalBudget;
+  if (body.visibility !== undefined && (body.visibility === "public" || body.visibility === "private")) {
+    updates.visibility = body.visibility;
+  }
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
@@ -240,14 +246,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     .from("organizations")
     .update(updates)
     .eq("id", orgId)
-    .select("id, name, total_budget")
+    .select("id, name, total_budget, visibility")
     .single();
 
   if (error || !data) {
     return NextResponse.json({ error: "Failed to update organization" }, { status: 500 });
   }
 
-  return NextResponse.json({ id: data.id, name: data.name, totalBudget: data.total_budget });
+  return NextResponse.json({ id: data.id, name: data.name, totalBudget: data.total_budget, visibility: data.visibility });
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {

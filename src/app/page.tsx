@@ -1,51 +1,163 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { getSupabaseBrowser } from "@/db/supabase-browser";
 
-const FEATURES = [
-  {
-    icon: "🗺️",
-    title: "Spatial Map",
-    desc: "Gather.town-style canvas where departments are rooms and agents are avatars moving in real time.",
-  },
-  {
-    icon: "🔗",
-    title: "Relationship Graph",
-    desc: "Interactive node graph showing how agents, skills, MCP tools, and plugins connect across your org.",
-  },
-  {
-    icon: "🤖",
-    title: "Agent Registry",
-    desc: "Register any Claude Code agent with one command. Track vendor, model, skills, and MCP servers.",
-  },
-  {
-    icon: "💬",
-    title: "Agent Chat",
-    desc: "Talk directly to any agent through a built-in chat interface with full conversation history.",
-  },
-  {
-    icon: "📊",
-    title: "Cost Analytics",
-    desc: "Per-department and per-vendor cost breakdowns with trend charts and budget tracking.",
-  },
-  {
-    icon: "🔌",
-    title: "Plugin System",
-    desc: "One-command setup. Agents self-register and send heartbeats on every session start.",
-  },
-];
+type Persona = "admin" | "developer";
 
-const STEPS = [
-  { step: "01", title: "Create an org", desc: "Sign in and create your organization in one click." },
-  { step: "02", title: "Share the invite code", desc: "Give your team the 6-character code to join." },
-  { step: "03", title: "Register agents", desc: "Run /agentfloor:setup in Claude Code to register." },
-  { step: "04", title: "Monitor everything", desc: "See all agents on the spatial map, graph, and dashboards." },
-];
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [text]);
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="absolute right-3 top-3 rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-300"
+    >
+      {copied ? "Copied!" : "Copy"}
+    </button>
+  );
+}
+
+function CodeBlock({ children }: { children: string }) {
+  return (
+    <div className="relative rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-sm leading-relaxed text-slate-300">
+      <CopyButton text={children} />
+      <pre className="overflow-x-auto pr-16">{children}</pre>
+    </div>
+  );
+}
+
+function AdminContent({ authHref }: { authHref: string }) {
+  return (
+    <div className="space-y-8">
+      <div className="flex gap-5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-600/20 text-sm font-bold text-emerald-400">
+          01
+        </div>
+        <div className="flex-1 space-y-3">
+          <h3 className="font-semibold">Clone &amp; deploy</h3>
+          <CodeBlock>{`git clone https://github.com/gmuffiness/agentfloor.git
+cd agentfloor
+pnpm install && pnpm dev`}</CodeBlock>
+        </div>
+      </div>
+
+      <div className="flex gap-5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-600/20 text-sm font-bold text-emerald-400">
+          02
+        </div>
+        <div className="flex-1">
+          <h3 className="font-semibold">Sign in &amp; create your organization</h3>
+          <p className="mt-1.5 text-sm text-slate-400">
+            Get a 6-character invite code to share with your team.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex gap-5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-600/20 text-sm font-bold text-emerald-400">
+          03
+        </div>
+        <div className="flex-1">
+          <h3 className="font-semibold">Share the invite code with your team</h3>
+          <p className="mt-1.5 text-sm text-slate-400">
+            Agents will appear on your floor as developers register them.
+          </p>
+        </div>
+      </div>
+
+      <div className="pt-2">
+        <Link
+          href={authHref}
+          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 text-sm font-semibold transition-colors hover:bg-emerald-500"
+        >
+          Get Started
+          <span aria-hidden="true">&rarr;</span>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function DeveloperContent() {
+  return (
+    <div className="space-y-8">
+      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6">
+        <p className="text-lg font-medium leading-relaxed text-slate-200">
+          Run{" "}
+          <code className="rounded-md bg-slate-800 px-2 py-1 font-mono text-emerald-400">
+            npx agentfloor login
+          </code>{" "}
+          in your terminal and follow the prompts to join AgentFloor.
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-slate-300">
+          That&apos;s it. The CLI will:
+        </p>
+        <ul className="space-y-2 text-sm text-slate-400">
+          <li className="flex items-start gap-2.5">
+            <span className="mt-0.5 text-emerald-400">&#10003;</span>
+            Connect to your team&apos;s hub
+          </li>
+          <li className="flex items-start gap-2.5">
+            <span className="mt-0.5 text-emerald-400">&#10003;</span>
+            Verify your email
+          </li>
+          <li className="flex items-start gap-2.5">
+            <span className="mt-0.5 text-emerald-400">&#10003;</span>
+            Join your organization
+          </li>
+        </ul>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-slate-300">
+          Then push your agent:
+        </p>
+        <CodeBlock>npx agentfloor push</CodeBlock>
+        <p className="text-sm text-slate-400">
+          Auto-detects git, skills, MCP tools, and CLAUDE.md.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-3 pt-2">
+        <a
+          href="https://github.com/gmuffiness/agentfloor/blob/main/docs/cli.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-slate-800"
+        >
+          View CLI Docs
+          <span aria-hidden="true">&rarr;</span>
+        </a>
+        <a
+          href="https://www.npmjs.com/package/agentfloor"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-slate-800"
+        >
+          npm
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-4.5-4.5h6m0 0v6m0-6L9.75 14.25" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  );
+}
 
 export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [persona, setPersona] = useState<Persona>("admin");
 
   useEffect(() => {
     getSupabaseBrowser().auth.getUser().then(({ data: { user } }) => {
@@ -94,116 +206,70 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden pt-16">
-        {/* Background glow */}
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute left-1/2 top-0 h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-emerald-500/5 blur-[120px]" />
         </div>
 
-        <div className="relative mx-auto max-w-4xl px-6 pb-24 pt-24 text-center sm:pt-32">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-4 py-1.5 text-sm text-slate-300">
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
-            Open-source AI fleet management
-          </div>
-
-          <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-6xl sm:leading-tight">
-            See every AI agent<br />
+        <div className="relative mx-auto max-w-3xl px-6 pb-12 pt-24 text-center sm:pt-32">
+          <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl sm:leading-tight">
+            The central hub for your{" "}
             <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-              on one floor
+              AI agents
             </span>
           </h1>
-
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-400">
-            AgentFloor is a centralized monitoring hub for distributed Claude Code agents.
-            Departments are rooms, agents are avatars, skills are equipment &mdash;
-            giving your entire AI fleet a single pane of glass.
+          <p className="mx-auto mt-5 max-w-xl text-lg text-slate-400">
+            One place to register, monitor, and manage every agent across your organization.
           </p>
-
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href={authHref}
-              className="rounded-lg bg-emerald-600 px-6 py-3 text-sm font-semibold transition-colors hover:bg-emerald-500"
-            >
-              Start your project
-            </Link>
-            <a
-              href="https://github.com/gmuffiness/agentfloor"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-6 py-3 text-sm font-medium transition-colors hover:bg-slate-800"
-            >
-              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" /></svg>
-              GitHub
-            </a>
-          </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="border-t border-slate-800/60 py-24">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="mb-16 text-center">
-            <h2 className="text-3xl font-bold sm:text-4xl">Everything you need to manage your AI fleet</h2>
-            <p className="mt-4 text-lg text-slate-400">
-              From spatial visualization to cost analytics &mdash; all in one place.
-            </p>
-          </div>
-
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f) => (
-              <div
-                key={f.title}
-                className="group rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-colors hover:border-slate-700 hover:bg-slate-900"
-              >
-                <span className="text-3xl">{f.icon}</span>
-                <h3 className="mt-4 text-lg font-semibold">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-400">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className="border-t border-slate-800/60 py-24">
-        <div className="mx-auto max-w-4xl px-6">
-          <div className="mb-16 text-center">
-            <h2 className="text-3xl font-bold sm:text-4xl">Up and running in minutes</h2>
-            <p className="mt-4 text-lg text-slate-400">
-              Four steps from zero to full fleet visibility.
-            </p>
-          </div>
-
-          <div className="grid gap-8 sm:grid-cols-2">
-            {STEPS.map((s) => (
-              <div key={s.step} className="flex gap-5">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-600/20 text-sm font-bold text-emerald-400">
-                  {s.step}
-                </div>
+      {/* Persona Toggle */}
+      <section className="relative pb-24">
+        <div className="mx-auto max-w-2xl px-6">
+          {/* Toggle cards */}
+          <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <button
+              onClick={() => setPersona("admin")}
+              className={`rounded-xl border px-5 py-4 text-left transition-all ${
+                persona === "admin"
+                  ? "border-emerald-500/50 bg-emerald-500/10 ring-1 ring-emerald-500/20"
+                  : "border-slate-800 bg-slate-900/50 hover:border-slate-700"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🧑</span>
                 <div>
-                  <h3 className="font-semibold">{s.title}</h3>
-                  <p className="mt-1 text-sm text-slate-400">{s.desc}</p>
+                  <p className="font-semibold">I&apos;m a Hub Admin</p>
+                  <p className="text-xs text-slate-400">Deploy &amp; manage the hub</p>
                 </div>
               </div>
-            ))}
+            </button>
+            <button
+              onClick={() => setPersona("developer")}
+              className={`rounded-xl border px-5 py-4 text-left transition-all ${
+                persona === "developer"
+                  ? "border-emerald-500/50 bg-emerald-500/10 ring-1 ring-emerald-500/20"
+                  : "border-slate-800 bg-slate-900/50 hover:border-slate-700"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🤖</span>
+                <div>
+                  <p className="font-semibold">I&apos;m an Agent Developer</p>
+                  <p className="text-xs text-slate-400">Register agents via CLI</p>
+                </div>
+              </div>
+            </button>
           </div>
-        </div>
-      </section>
 
-      {/* CTA */}
-      <section className="border-t border-slate-800/60 py-24">
-        <div className="mx-auto max-w-2xl px-6 text-center">
-          <h2 className="text-3xl font-bold sm:text-4xl">
-            Ready to see your agents?
-          </h2>
-          <p className="mt-4 text-lg text-slate-400">
-            Create your organization, share the invite code, and start monitoring in minutes.
-          </p>
-          <Link
-            href={authHref}
-            className="mt-8 inline-block rounded-lg bg-emerald-600 px-8 py-3.5 text-sm font-semibold transition-colors hover:bg-emerald-500"
-          >
-            Get Started Free
-          </Link>
+          {/* Content panel */}
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 sm:p-8">
+            {persona === "admin" ? (
+              <AdminContent authHref={authHref} />
+            ) : (
+              <DeveloperContent />
+            )}
+          </div>
         </div>
       </section>
 
@@ -213,6 +279,24 @@ export default function HomePage() {
           <div className="flex items-center gap-2">
             <span>🏘️</span>
             <span>AgentFloor</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <a
+              href="https://github.com/gmuffiness/agentfloor"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-slate-300"
+            >
+              GitHub
+            </a>
+            <a
+              href="https://www.npmjs.com/package/agentfloor"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-slate-300"
+            >
+              npm
+            </a>
           </div>
           <p>&copy; {new Date().getFullYear()} AgentFloor. Open source under MIT.</p>
         </div>

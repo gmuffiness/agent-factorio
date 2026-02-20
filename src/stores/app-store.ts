@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Organization, Department, Agent, Vendor, Announcement, AnnouncementTargetType, AnnouncementPriority } from "@/types";
+import type { MapThemeId } from "@/components/spatial/MapThemes";
 
 interface AppState {
   organization: Organization;
@@ -11,8 +12,10 @@ interface AppState {
   isLoaded: boolean;
   sidebarCollapsed: boolean;
   lastFetchedAt: number;
+  mapTheme: MapThemeId;
   // Actions
   setCurrentOrgId: (orgId: string) => void;
+  setMapTheme: (theme: MapThemeId) => void;
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   selectDepartment: (id: string | null) => void;
@@ -45,6 +48,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     id: "",
     name: "",
     totalBudget: 0,
+    visibility: "private",
     departments: [],
   },
   currentOrgId: null,
@@ -55,9 +59,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   isLoaded: false,
   sidebarCollapsed: false,
   lastFetchedAt: 0,
+  mapTheme: (typeof window !== "undefined"
+    ? (localStorage.getItem("agentfloor-map-theme") as MapThemeId | null) ?? "city"
+    : "city") as MapThemeId,
   announcements: [],
 
   setCurrentOrgId: (orgId) => set({ currentOrgId: orgId }),
+
+  setMapTheme: (theme) => {
+    localStorage.setItem("agentfloor-map-theme", theme);
+    set({ mapTheme: theme });
+  },
 
   toggleSidebar: () => {
     const next = !get().sidebarCollapsed;

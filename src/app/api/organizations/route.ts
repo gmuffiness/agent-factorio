@@ -35,6 +35,7 @@ export async function GET() {
     id: o.id,
     name: o.name,
     totalBudget: o.total_budget,
+    visibility: o.visibility ?? "private",
     inviteCode: o.invite_code,
     createdBy: o.created_by,
     createdAt: o.created_at,
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
 
   const { user } = authResult;
   const body = await request.json();
-  const { name, budget } = body;
+  const { name, budget, visibility } = body;
 
   if (!name) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
@@ -65,6 +66,7 @@ export async function POST(request: NextRequest) {
     id,
     name,
     total_budget: budget ?? 0,
+    visibility: visibility === "public" ? "public" : "private",
     invite_code: inviteCode,
     created_by: displayName,
     creator_user_id: user.id,
@@ -87,5 +89,5 @@ export async function POST(request: NextRequest) {
     joined_at: now,
   });
 
-  return NextResponse.json({ id, name, inviteCode }, { status: 201 });
+  return NextResponse.json({ id, name, inviteCode, visibility: visibility === "public" ? "public" : "private" }, { status: 201 });
 }

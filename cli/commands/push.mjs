@@ -102,20 +102,24 @@ export async function pushCommand() {
     process.exit(1);
   }
 
-  const { id: agentId, updated } = res.data;
+  const { id: agentId, updated, pollToken } = res.data;
 
-  writeLocalConfig(
-    {
-      hubUrl: org.hubUrl,
-      orgId: org.orgId,
-      agentId,
-      agentName,
-      vendor,
-      model,
-      pushedAt: new Date().toISOString(),
-    },
-    projectRoot
-  );
+  const configData = {
+    hubUrl: org.hubUrl,
+    orgId: org.orgId,
+    agentId,
+    agentName,
+    vendor,
+    model,
+    pushedAt: new Date().toISOString(),
+  };
+
+  // Save pollToken if returned (openclaw agents)
+  if (pollToken) {
+    configData.pollToken = pollToken;
+  }
+
+  writeLocalConfig(configData, projectRoot);
 
   if (updated) {
     success(`Agent updated! (${agentId})`);

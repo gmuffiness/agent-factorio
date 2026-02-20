@@ -131,11 +131,11 @@ export function createDepartmentRoom(
   const nameText = new Text({
     text: department.name,
     style: {
-      fontFamily: "monospace",
-      fontSize: 11,
-      fontWeight: "700",
+      fontFamily: '"Press Start 2P", monospace',
+      fontSize: 8,
+      fontWeight: "400",
       fill: "#F5E6D0",
-      letterSpacing: 0.5,
+      letterSpacing: 0,
     },
   });
   nameText.anchor.set(0.5, 0.5);
@@ -219,7 +219,7 @@ export function createDepartmentRoom(
   const agentCount = department.agents.length;
   const countText = new Text({
     text: `${agentCount} agent${agentCount !== 1 ? "s" : ""}`,
-    style: { fontFamily: "monospace", fontSize: 8, fill: "#94A3B8" },
+    style: { fontFamily: '"Press Start 2P", monospace', fontSize: 6, fill: "#94A3B8" },
   });
   countText.x = floorX + 10;
   countText.y = hudY + 6;
@@ -228,7 +228,7 @@ export function createDepartmentRoom(
   // Vendor label
   const vendorLabel = new Text({
     text: getVendorLabel(department.primaryVendor),
-    style: { fontFamily: "monospace", fontSize: 8, fontWeight: "700", fill: vendorColor },
+    style: { fontFamily: '"Press Start 2P", monospace', fontSize: 6, fontWeight: "400", fill: vendorColor },
   });
   vendorLabel.anchor.set(1, 0);
   vendorLabel.x = floorX + floorW - 10;
@@ -239,9 +239,9 @@ export function createDepartmentRoom(
   const costText = new Text({
     text: `${formatCurrency(department.monthlySpend)} / ${formatCurrency(department.budget)}`,
     style: {
-      fontFamily: "monospace",
-      fontSize: 10,
-      fontWeight: "700",
+      fontFamily: '"Press Start 2P", monospace',
+      fontSize: 7,
+      fontWeight: "400",
       fill: overBudget ? "#EF4444" : "#E2E8F0",
     },
   });

@@ -7,6 +7,7 @@ import SubscriptionManager from "@/components/settings/SubscriptionManager";
 import { useOrgId } from "@/hooks/useOrgId";
 import { useAppStore } from "@/stores/app-store";
 import { cn } from "@/lib/utils";
+import { MAP_THEMES, type MapThemeId } from "@/components/spatial/MapThemes";
 
 interface Member {
   id: string;
@@ -35,10 +36,20 @@ function RoleBadge({ role }: { role: string }) {
   );
 }
 
+interface GitHubInstallation {
+  id: string;
+  installation_id: number;
+  github_account_login: string;
+  github_account_type: string;
+  created_at: string;
+}
+
 export default function SettingsPage() {
   const orgId = useOrgId();
   const router = useRouter();
   const organization = useAppStore((s) => s.organization);
+  const mapTheme = useAppStore((s) => s.mapTheme);
+  const setMapTheme = useAppStore((s) => s.setMapTheme);
   const [members, setMembers] = useState<Member[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState<string>("member");
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -51,9 +62,15 @@ export default function SettingsPage() {
     message: string;
   } | null>(null);
 
+  // GitHub integration state
+  const [githubInstallations, setGithubInstallations] = useState<GitHubInstallation[]>([]);
+  const [githubInstallUrl, setGithubInstallUrl] = useState<string | null>(null);
+  const [githubLoading, setGithubLoading] = useState(true);
+
   // Org settings state — initialized from store
   const [orgName, setOrgName] = useState(organization.name);
   const [orgBudget, setOrgBudget] = useState<number>(organization.totalBudget);
+  const [orgVisibility, setOrgVisibility] = useState<"public" | "private">(organization.visibility ?? "private");
   const [orgSaving, setOrgSaving] = useState(false);
   const [orgSaveResult, setOrgSaveResult] = useState<{
     type: "success" | "error";
@@ -80,9 +97,36 @@ export default function SettingsPage() {
     setLoading(false);
   }, [orgId]);
 
+  const fetchGitHub = useCallback(async () => {
+    setGithubLoading(true);
+    try {
+      const res = await fetch(`/api/organizations/${orgId}/github`);
+      if (res.ok) {
+        const data = await res.json();
+        setGithubInstallations(data.installations ?? []);
+        setGithubInstallUrl(data.installUrl ?? null);
+      }
+    } finally {
+      setGithubLoading(false);
+    }
+  }, [orgId]);
+
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    fetchGitHub();
+  }, [fetchData, fetchGitHub]);
+
+  const handleDisconnectGitHub = async (id: string) => {
+    if (!confirm("Disconnect this GitHub account? You can reconnect later.")) return;
+    const res = await fetch(`/api/organizations/${orgId}/github`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ installationId: id }),
+    });
+    if (res.ok) {
+      fetchGitHub();
+    }
+  };
 
   const handleCopyCode = async () => {
     if (!inviteCode) return;
@@ -165,7 +209,7 @@ export default function SettingsPage() {
     const res = await fetch(`/api/organizations/${orgId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: orgName, totalBudget: orgBudget }),
+      body: JSON.stringify({ name: orgName, totalBudget: orgBudget, visibility: orgVisibility }),
     });
 
     if (!res.ok) {
@@ -306,6 +350,40 @@ export default function SettingsPage() {
                 className="w-48 rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
               />
             </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-400">Visibility</label>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setOrgVisibility("private")}
+                  className={cn(
+                    "rounded border px-4 py-2 text-sm font-medium transition-colors",
+                    orgVisibility === "private"
+                      ? "border-blue-500 bg-blue-500/10 text-blue-300"
+                      : "border-slate-600 bg-slate-900 text-slate-400 hover:border-slate-500",
+                  )}
+                >
+                  Private
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrgVisibility("public")}
+                  className={cn(
+                    "rounded border px-4 py-2 text-sm font-medium transition-colors",
+                    orgVisibility === "public"
+                      ? "border-blue-500 bg-blue-500/10 text-blue-300"
+                      : "border-slate-600 bg-slate-900 text-slate-400 hover:border-slate-500",
+                  )}
+                >
+                  Public
+                </button>
+              </div>
+              <p className="text-xs text-slate-500">
+                {orgVisibility === "private"
+                  ? "Only invited members can see this organization."
+                  : "Anyone can discover this organization."}
+              </p>
+            </div>
             <div className="flex items-center gap-3">
               <button
                 type="submit"
@@ -399,6 +477,116 @@ export default function SettingsPage() {
           )}
         </div>
       )}
+
+      {/* GitHub Integration */}
+      {isAdmin && (
+        <div className="mb-8 rounded-lg border border-slate-700 bg-slate-800/50 p-6">
+          <h2 className="mb-1 text-lg font-semibold text-white">GitHub Integration</h2>
+          <p className="mb-4 text-sm text-slate-400">
+            Connect a GitHub account to allow cloud-runtime agents to access private repositories.
+          </p>
+
+          {githubLoading ? (
+            <p className="text-sm text-slate-500">Loading...</p>
+          ) : (
+            <>
+              {githubInstallations.length > 0 && (
+                <div className="mb-4 space-y-3">
+                  {githubInstallations.map((inst) => (
+                    <div
+                      key={inst.id}
+                      className="flex items-center justify-between rounded border border-slate-600 bg-slate-900 px-4 py-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <svg className="h-5 w-5 text-slate-300" viewBox="0 0 16 16" fill="currentColor">
+                          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+                        </svg>
+                        <div>
+                          <span className="font-medium text-white">{inst.github_account_login}</span>
+                          <span className="ml-2 rounded-full bg-slate-700 px-2 py-0.5 text-xs text-slate-400">
+                            {inst.github_account_type}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDisconnectGitHub(inst.id)}
+                        className="rounded px-3 py-1 text-sm text-red-400 hover:bg-red-500/20"
+                      >
+                        Disconnect
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {githubInstallUrl && (
+                <a
+                  href={githubInstallUrl}
+                  className="inline-flex items-center gap-2 rounded bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-600"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+                  </svg>
+                  {githubInstallations.length > 0 ? "Connect Another Account" : "Connect GitHub"}
+                </a>
+              )}
+
+              {!githubInstallUrl && githubInstallations.length === 0 && (
+                <p className="text-sm text-slate-500">
+                  GitHub App is not configured. Set GITHUB_APP_CLIENT_ID in environment variables.
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Map Theme */}
+      <div className="mb-8 rounded-lg border border-slate-700 bg-slate-800/50 p-6">
+        <h2 className="mb-1 text-lg font-semibold text-white">Map Theme</h2>
+        <p className="mb-4 text-sm text-slate-400">
+          Choose the visual theme for the spatial map. Changes apply instantly.
+        </p>
+        <div className="flex gap-4">
+          {MAP_THEMES.map((theme) => {
+            const selected = mapTheme === theme.id;
+            const swatches = [
+              theme.grass[0], theme.grass[1], theme.grass[2],
+              theme.dirt,
+              theme.water[0], theme.treeTrunk,
+              theme.treeLeaves, theme.stoneColor,
+              theme.bushColor, theme.flowerColors[0],
+              theme.campfireFlames[1], theme.waterWave,
+            ];
+            return (
+              <button
+                key={theme.id}
+                onClick={() => setMapTheme(theme.id as MapThemeId)}
+                className={cn(
+                  "flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors",
+                  selected
+                    ? "border-blue-500 bg-blue-500/10"
+                    : "border-slate-600 bg-slate-900 hover:border-slate-500",
+                )}
+              >
+                <div className="grid grid-cols-4 gap-1">
+                  {swatches.map((color, i) => (
+                    <div
+                      key={i}
+                      className="h-4 w-4 rounded-sm"
+                      style={{ backgroundColor: `#${color.toString(16).padStart(6, "0")}` }}
+                    />
+                  ))}
+                </div>
+                <span className={cn("text-sm font-medium", selected ? "text-blue-300" : "text-slate-300")}>
+                  {theme.name}
+                </span>
+                <span className="text-xs text-slate-500">{theme.description}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* My Subscriptions */}
       <div className="mb-8 rounded-lg border border-slate-700 bg-slate-800/50 p-6">

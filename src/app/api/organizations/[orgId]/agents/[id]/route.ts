@@ -107,6 +107,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     human,
     registeredBy: agent.registered_by ?? null,
     registeredByMember,
+    runtimeType: agent.runtime_type ?? "api",
+    gatewayUrl: agent.gateway_url ?? "",
     skills: agentSkillList,
     plugins: pluginRows ?? [],
     mcpTools: mcpRows ?? [],
@@ -165,6 +167,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (body.monthlyCost !== undefined) updates.monthly_cost = body.monthlyCost;
   if (body.deptId !== undefined) updates.dept_id = body.deptId;
   if (body.humanId !== undefined) updates.human_id = body.humanId;
+  if (body.runtimeType !== undefined) updates.runtime_type = body.runtimeType;
+  if (body.gatewayUrl !== undefined) updates.gateway_url = body.gatewayUrl;
 
   if (Object.keys(updates).length > 0) {
     await supabase.from("agents").update(updates).eq("id", id);

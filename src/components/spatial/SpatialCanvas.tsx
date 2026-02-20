@@ -1,15 +1,19 @@
 "use client";
 
 import React, { useRef, useEffect, useCallback, useState } from "react";
-import { Application, Container, Graphics } from "pixi.js";
+import { Application, Container, Graphics, TextureSource } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 import { useAppStore } from "@/stores/app-store";
 import { createDepartmentRoom } from "./DepartmentRoom";
 import { createAgentAvatar, loadSpriteSheet, getSpriteSheetTexture, resetSpriteSheet } from "./AgentAvatar";
 import { PlayerCharacter, type PlayerKeys, type RoomCollider } from "./PlayerCharacter";
+import { generateTileset, createTiledGround } from "./TilesetGenerator";
+import { createEnvironmentAnimations, type AnimatedDecoration } from "./EnvironmentAnimations";
+import { getThemePalette } from "./MapThemes";
 import MapControls from "./MapControls";
 import DialogueOverlay from "./DialogueOverlay";
 import type { Agent } from "@/types";
+import { getVendorColor } from "@/lib/utils";
 
 // Shared viewport ref for programmatic access
 let sharedViewport: Viewport | null = null;
@@ -23,18 +27,7 @@ const MIN_WORLD_HEIGHT = 600;
 const WORLD_PADDING = 150;
 const TILE_SIZE = 32;
 
-// Game-style ground color palette
-const GRASS_COLORS = [0x4a7a3d, 0x528a45, 0x3d6b33];
-const PATH_COLOR = 0xc4a882;
-const PATH_EDGE = 0xb09870;
-const TREE_TRUNK = 0x6b4226;
-const TREE_LEAVES = 0x2d5a1e;
-const TREE_LEAVES_LIGHT = 0x3d7a2e;
-const BUSH_COLOR = 0x3a6e2a;
-const BUSH_HIGHLIGHT = 0x4a8e3a;
-const FLOWER_COLORS = [0xe85d75, 0xf0c040, 0xd0d0ff, 0xff9944];
-const STONE_COLOR = 0x8a8a8a;
-const STONE_SHADOW = 0x6a6a6a;
+// Decoration colors are now derived from theme palette (see createDecorationOverlay)
 
 /** Simple seeded pseudo-random for deterministic placement */
 function seededRand(x: number, y: number): number {
@@ -43,72 +36,241 @@ function seededRand(x: number, y: number): number {
 }
 
 /** Draw a pixel-art tree at position */
-function drawTree(g: Graphics, x: number, y: number) {
+function drawTree(g: Graphics, x: number, y: number, p: { treeTrunk: number; treeLeaves: number; treeLeavesLight: number }) {
   g.rect(x + 8, y + 16, 4, 8);
-  g.fill(TREE_TRUNK);
+  g.fill(p.treeTrunk);
   g.rect(x + 4, y + 12, 12, 4);
-  g.fill(TREE_LEAVES);
+  g.fill(p.treeLeaves);
   g.rect(x + 2, y + 8, 16, 4);
-  g.fill(TREE_LEAVES);
+  g.fill(p.treeLeaves);
   g.rect(x + 4, y + 4, 12, 4);
-  g.fill(TREE_LEAVES);
+  g.fill(p.treeLeaves);
   g.rect(x + 6, y, 8, 4);
-  g.fill(TREE_LEAVES_LIGHT);
+  g.fill(p.treeLeavesLight);
   g.rect(x + 6, y + 8, 4, 4);
-  g.fill(TREE_LEAVES_LIGHT);
+  g.fill(p.treeLeavesLight);
 }
 
 /** Draw a pixel-art bush at position */
-function drawBush(g: Graphics, x: number, y: number) {
+function drawBush(g: Graphics, x: number, y: number, p: { bushColor: number; bushHighlight: number }) {
   g.rect(x, y + 4, 14, 8);
-  g.fill(BUSH_COLOR);
+  g.fill(p.bushColor);
   g.rect(x + 2, y, 10, 4);
-  g.fill(BUSH_COLOR);
+  g.fill(p.bushColor);
   g.rect(x + 4, y + 2, 4, 4);
-  g.fill(BUSH_HIGHLIGHT);
+  g.fill(p.bushHighlight);
 }
 
 /** Draw a tiny flower at position */
-function drawFlower(g: Graphics, x: number, y: number, color: number) {
+function drawFlower(g: Graphics, x: number, y: number, color: number, p: { grassBlade: number; flowerCenter: number }) {
   g.rect(x + 1, y + 3, 2, 4);
-  g.fill(0x3d6b33);
+  g.fill(p.grassBlade);
   g.rect(x, y + 1, 4, 2);
   g.fill(color);
   g.rect(x + 1, y, 2, 4);
   g.fill(color);
   g.rect(x + 1, y + 1, 2, 2);
-  g.fill(0xffee88);
+  g.fill(p.flowerCenter);
 }
 
 /** Draw a small stone at position */
-function drawStone(g: Graphics, x: number, y: number) {
+function drawStone(g: Graphics, x: number, y: number, p: { stoneColor: number; stoneShadow: number; stoneHighlight: number }) {
   g.rect(x, y + 1, 6, 3);
-  g.fill(STONE_COLOR);
+  g.fill(p.stoneColor);
   g.rect(x + 1, y, 4, 1);
-  g.fill(STONE_COLOR);
+  g.fill(p.stoneColor);
   g.rect(x + 1, y + 4, 4, 1);
-  g.fill(STONE_SHADOW);
+  g.fill(p.stoneShadow);
   g.rect(x + 1, y + 1, 2, 1);
-  g.fill(0xa0a0a0);
+  g.fill(p.stoneHighlight);
 }
 
-/** Draw a 16px wide dirt path segment */
-function drawPathH(g: Graphics, x: number, y: number, w: number) {
-  g.rect(x, y, w, 16);
-  g.fill(PATH_COLOR);
-  g.rect(x, y, w, 2);
-  g.fill(PATH_EDGE);
-  g.rect(x, y + 14, w, 2);
-  g.fill(PATH_EDGE);
+// ─── Urban decoration draw functions ─────────────────────────────────────────
+
+/** Draw a pixel-art street lamp (~12x40px, roughly 1 tile tall) */
+function drawStreetLamp(g: Graphics, x: number, y: number, p: { lampPost: number; lampLight: number }) {
+  // Vertical pole
+  g.rect(x + 5, y + 10, 3, 30);
+  g.fill(p.lampPost);
+  // Base plate
+  g.rect(x + 2, y + 38, 8, 2);
+  g.fill(p.lampPost);
+  // Horizontal arm
+  g.rect(x + 1, y + 8, 10, 3);
+  g.fill(p.lampPost);
+  // Lamp housing
+  g.rect(x, y + 4, 12, 4);
+  g.fill(0x444444);
+  // Light bulb
+  g.rect(x + 2, y + 6, 8, 3);
+  g.fill(p.lampLight);
+  // Glow halo
+  g.rect(x - 4, y + 2, 20, 2);
+  g.fill({ color: p.lampLight, alpha: 0.25 });
+  g.rect(x - 2, y, 16, 2);
+  g.fill({ color: p.lampLight, alpha: 0.15 });
 }
 
-function drawPathV(g: Graphics, x: number, y: number, h: number) {
-  g.rect(x, y, 16, h);
-  g.fill(PATH_COLOR);
-  g.rect(x, y, 2, h);
-  g.fill(PATH_EDGE);
-  g.rect(x + 14, y, 2, h);
-  g.fill(PATH_EDGE);
+/** Draw a pixel-art park bench (~28x16px, isometric top-down view) */
+function drawBenchSeat(g: Graphics, x: number, y: number, p: { benchColor: number; benchLeg: number }) {
+  // Back rest
+  g.rect(x + 2, y, 24, 3);
+  g.fill(p.benchColor);
+  g.rect(x + 4, y + 1, 20, 2);
+  g.fill({ color: 0xffffff, alpha: 0.1 }); // highlight
+  // Seat planks (3 horizontal boards)
+  g.rect(x + 1, y + 4, 26, 3);
+  g.fill(p.benchColor);
+  g.rect(x + 1, y + 8, 26, 3);
+  g.fill(p.benchColor);
+  // Plank gap lines
+  g.rect(x + 1, y + 7, 26, 1);
+  g.fill({ color: 0x000000, alpha: 0.15 });
+  // Metal legs (4 legs visible from top)
+  g.rect(x, y + 3, 2, 10);
+  g.fill(p.benchLeg);
+  g.rect(x + 8, y + 3, 2, 10);
+  g.fill(p.benchLeg);
+  g.rect(x + 18, y + 3, 2, 10);
+  g.fill(p.benchLeg);
+  g.rect(x + 26, y + 3, 2, 10);
+  g.fill(p.benchLeg);
+  // Leg shadow
+  g.rect(x, y + 12, 28, 2);
+  g.fill({ color: 0x000000, alpha: 0.1 });
+}
+
+/** Draw a pixel-art vending machine (~20x32px, about 1 tile) */
+function drawVendingMachine(g: Graphics, x: number, y: number, p: { vendingBody: number; vendingScreen: number }) {
+  // Shadow
+  g.rect(x + 2, y + 30, 18, 2);
+  g.fill({ color: 0x000000, alpha: 0.15 });
+  // Body
+  g.rect(x, y, 20, 32);
+  g.fill(p.vendingBody);
+  // Top edge highlight
+  g.rect(x, y, 20, 2);
+  g.fill({ color: 0xffffff, alpha: 0.15 });
+  // Screen / product display window
+  g.rect(x + 3, y + 3, 14, 12);
+  g.fill(p.vendingScreen);
+  // Product rows in screen (3 rows of colored dots)
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 4; col++) {
+      const colors = [0xcc3333, 0x33aa33, 0x3366cc, 0xccaa33];
+      g.rect(x + 4 + col * 3, y + 4 + row * 4, 2, 3);
+      g.fill(colors[(row + col) % 4]);
+    }
+  }
+  // Button panel
+  g.rect(x + 3, y + 17, 14, 4);
+  g.fill(0x333344);
+  // Buttons
+  g.rect(x + 4, y + 18, 3, 2);
+  g.fill(0xcc3333);
+  g.rect(x + 8, y + 18, 3, 2);
+  g.fill(0x33cc33);
+  g.rect(x + 12, y + 18, 3, 2);
+  g.fill(0x3333cc);
+  // Dispenser slot
+  g.rect(x + 5, y + 23, 10, 6);
+  g.fill(0x1a1a1a);
+  g.rect(x + 6, y + 24, 8, 4);
+  g.fill(0x111111);
+}
+
+/** Draw a pixel-art fire hydrant (~12x18px) */
+function drawFireHydrant(g: Graphics, x: number, y: number, p: { hydrantColor: number }) {
+  // Shadow
+  g.rect(x + 1, y + 16, 10, 2);
+  g.fill({ color: 0x000000, alpha: 0.12 });
+  // Base
+  g.rect(x + 1, y + 14, 10, 3);
+  g.fill(p.hydrantColor);
+  // Main body
+  g.rect(x + 2, y + 4, 8, 10);
+  g.fill(p.hydrantColor);
+  // Body highlight
+  g.rect(x + 3, y + 5, 2, 8);
+  g.fill({ color: 0xffffff, alpha: 0.15 });
+  // Top cap
+  g.rect(x + 3, y + 1, 6, 3);
+  g.fill(p.hydrantColor);
+  // Top knob
+  g.rect(x + 5, y, 2, 2);
+  g.fill(p.hydrantColor);
+  // Side valves
+  g.rect(x, y + 7, 3, 3);
+  g.fill(p.hydrantColor);
+  g.rect(x + 9, y + 7, 3, 3);
+  g.fill(p.hydrantColor);
+  // Chain ring detail
+  g.rect(x + 4, y + 12, 4, 1);
+  g.fill({ color: 0x888888, alpha: 0.6 });
+}
+
+/** Draw a pixel-art manhole cover (~16x10px, oval top-down view) */
+function drawManhole(g: Graphics, x: number, y: number, p: { manholeColor: number }) {
+  // Outer rim
+  g.rect(x + 1, y, 14, 10);
+  g.fill(p.manholeColor);
+  g.rect(x, y + 2, 16, 6);
+  g.fill(p.manholeColor);
+  // Inner circle (slightly darker)
+  g.rect(x + 2, y + 1, 12, 8);
+  g.fill({ color: 0x000000, alpha: 0.12 });
+  g.rect(x + 3, y + 2, 10, 6);
+  g.fill(p.manholeColor);
+  // Cross grid pattern
+  g.rect(x + 7, y + 2, 2, 6);
+  g.fill({ color: 0x333333, alpha: 0.4 });
+  g.rect(x + 3, y + 4, 10, 2);
+  g.fill({ color: 0x333333, alpha: 0.4 });
+  // Grip holes
+  g.rect(x + 5, y + 3, 2, 1);
+  g.fill({ color: 0x222222, alpha: 0.5 });
+  g.rect(x + 9, y + 3, 2, 1);
+  g.fill({ color: 0x222222, alpha: 0.5 });
+  g.rect(x + 5, y + 6, 2, 1);
+  g.fill({ color: 0x222222, alpha: 0.5 });
+  g.rect(x + 9, y + 6, 2, 1);
+  g.fill({ color: 0x222222, alpha: 0.5 });
+}
+
+/** Draw a pixel-art potted plant (~16x24px) */
+function drawPottedPlant(g: Graphics, x: number, y: number, p: { pottedPlant: number; pottedPot: number }) {
+  // Plant canopy (bushy top)
+  g.rect(x + 4, y, 8, 3);
+  g.fill(p.pottedPlant);
+  g.rect(x + 2, y + 3, 12, 3);
+  g.fill(p.pottedPlant);
+  g.rect(x + 1, y + 6, 14, 4);
+  g.fill(p.pottedPlant);
+  // Leaf highlights
+  g.rect(x + 5, y + 1, 3, 2);
+  g.fill({ color: 0xffffff, alpha: 0.12 });
+  g.rect(x + 3, y + 4, 4, 2);
+  g.fill({ color: 0xffffff, alpha: 0.1 });
+  // Stem
+  g.rect(x + 7, y + 10, 2, 3);
+  g.fill(0x3a6a3a);
+  // Pot rim
+  g.rect(x + 3, y + 13, 10, 2);
+  g.fill(p.pottedPot);
+  // Pot body (tapered)
+  g.rect(x + 4, y + 15, 8, 4);
+  g.fill(p.pottedPot);
+  g.rect(x + 5, y + 19, 6, 3);
+  g.fill(p.pottedPot);
+  // Pot base
+  g.rect(x + 4, y + 22, 8, 2);
+  g.fill(p.pottedPot);
+  // Pot shadow
+  g.rect(x + 5, y + 24, 8, 1);
+  g.fill({ color: 0x000000, alpha: 0.1 });
+  // Pot shading
+  g.rect(x + 4, y + 16, 2, 3);
+  g.fill({ color: 0xffffff, alpha: 0.1 });
 }
 
 /** Check if a point overlaps with any department room (with padding) */
@@ -126,80 +288,103 @@ function overlapsRoom(
   return false;
 }
 
-/** Draw a tiled grass ground layer with paths, trees, and decorations */
-function createGroundLayer(
+/** Create decoration overlay (trees, bushes, flowers, stones) on top of tiled ground */
+function createDecorationOverlay(
   worldW: number, worldH: number,
   rooms: { x: number; y: number; w: number; h: number }[],
+  palette: import("./MapThemes").MapThemePalette,
 ): Container {
-  const ground = new Container();
-  ground.label = "ground-layer";
-
-  const tiles = new Graphics();
-  const pad = TILE_SIZE * 4;
-  const cols = Math.ceil((worldW + pad * 2) / TILE_SIZE);
-  const rows = Math.ceil((worldH + pad * 2) / TILE_SIZE);
-
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const tx = col * TILE_SIZE - pad;
-      const ty = row * TILE_SIZE - pad;
-      const shade = seededRand(col, row);
-      const colorIdx = shade < 0.4 ? 0 : shade < 0.75 ? 1 : 2;
-      tiles.rect(tx, ty, TILE_SIZE, TILE_SIZE);
-      tiles.fill(GRASS_COLORS[colorIdx]);
-    }
-  }
-  ground.addChild(tiles);
-
-  const paths = new Graphics();
-  const sorted = [...rooms].sort((a, b) => a.y === b.y ? a.x - b.x : a.y - b.y);
-  for (let i = 0; i < sorted.length; i++) {
-    for (let j = i + 1; j < sorted.length; j++) {
-      const a = sorted[i];
-      const b = sorted[j];
-      const aRight = a.x + a.w;
-      const bLeft = b.x;
-      const aMid = a.y + a.h / 2;
-      const bMid = b.y + b.h / 2;
-      if (Math.abs(aMid - bMid) < 100 && bLeft > aRight && bLeft - aRight < 120) {
-        drawPathH(paths, aRight, Math.min(aMid, bMid), bLeft - aRight);
-      }
-      const aCx = a.x + a.w / 2;
-      const bCx = b.x + b.w / 2;
-      const aBot = a.y + a.h;
-      const bTop = b.y;
-      if (Math.abs(aCx - bCx) < 150 && bTop > aBot && bTop - aBot < 150) {
-        drawPathV(paths, Math.min(aCx, bCx), aBot, bTop - aBot);
-      }
-    }
-  }
-  ground.addChild(paths);
-
   const decorations = new Graphics();
+  const pad = TILE_SIZE * 4;
   const DECOR_STEP = 80;
 
-  for (let dx = -pad; dx < worldW + pad; dx += DECOR_STEP) {
-    for (let dy = -pad; dy < worldH + pad; dy += DECOR_STEP) {
-      const r = seededRand(dx * 7, dy * 13);
-      if (r < 0.15 && !overlapsRoom(dx, dy, 24, rooms, 20)) {
-        drawTree(decorations, dx + seededRand(dx, dy * 3) * 20, dy + seededRand(dy, dx * 5) * 20);
-      } else if (r < 0.22 && !overlapsRoom(dx, dy, 14, rooms, 16)) {
-        drawBush(decorations, dx + seededRand(dx * 2, dy) * 16, dy + seededRand(dy * 2, dx) * 16);
-      } else if (r < 0.30 && !overlapsRoom(dx, dy, 6, rooms, 10)) {
-        drawFlower(
-          decorations,
-          dx + seededRand(dx * 3, dy) * 20,
-          dy + seededRand(dy * 3, dx) * 20,
-          FLOWER_COLORS[Math.floor(seededRand(dx, dy * 7) * FLOWER_COLORS.length)],
-        );
-      } else if (r < 0.34 && !overlapsRoom(dx, dy, 8, rooms, 12)) {
-        drawStone(decorations, dx + seededRand(dx * 5, dy) * 16, dy + seededRand(dy * 5, dx) * 16);
+  if (palette.decorationStyle === "urban") {
+    // ── Structured urban placement relative to rooms ──
+    const LAMP_INTERVAL = 160; // lamp posts every ~5 tiles — sparse
+
+    for (const room of rooms) {
+      const doorX = room.x + Math.floor(room.w / 2);
+      const doorY = room.y + room.h;
+
+      // Potted plants flanking the entrance
+      drawPottedPlant(decorations, doorX - 24, doorY + 6, palette);
+      drawPottedPlant(decorations, doorX + 16, doorY + 6, palette);
+
+      // Bench near entrance (left of the door, facing the street)
+      const benchX = doorX - 56;
+      if (!overlapsRoom(benchX, doorY + 10, 28, rooms, 4)) {
+        drawBenchSeat(decorations, benchX, doorY + 10, palette);
+      }
+
+      // Vending machine against the right outer wall
+      const vmX = room.x + room.w + 10;
+      const vmY = room.y + Math.floor(room.h / 2) - 16;
+      if (!overlapsRoom(vmX, vmY, 20, rooms, 6)) {
+        drawVendingMachine(decorations, vmX, vmY, palette);
+      }
+
+      // Fire hydrant at the left-front corner of the building
+      const fhX = room.x - 18;
+      const fhY = doorY + 4;
+      if (!overlapsRoom(fhX, fhY, 12, rooms, 6)) {
+        drawFireHydrant(decorations, fhX, fhY, palette);
+      }
+
+      // (Animated street lamp glow is placed by EnvironmentAnimations — no static lamp near door)
+
+      // Manhole in the road area in front of the room
+      const mhX = doorX + 36;
+      const mhY = doorY + 40;
+      if (!overlapsRoom(mhX, mhY, 16, rooms, 8)) {
+        drawManhole(decorations, mhX, mhY, palette);
+      }
+    }
+
+    // Sparse street lamps along the world perimeter (every ~5 tiles)
+    for (let lx = 48; lx < worldW - 48; lx += LAMP_INTERVAL) {
+      if (!overlapsRoom(lx, 16, 12, rooms, 32)) {
+        drawStreetLamp(decorations, lx, 16, palette);
+      }
+    }
+
+    // Sparse benches in open corridor areas (very few)
+    for (let dx = 80; dx < worldW - 80; dx += LAMP_INTERVAL * 2) {
+      for (let dy = 80; dy < worldH - 80; dy += LAMP_INTERVAL * 2) {
+        const r = seededRand(dx * 7, dy * 13);
+        if (r < 0.2 && !overlapsRoom(dx, dy, 28, rooms, 40)) {
+          drawBenchSeat(decorations, dx, dy, palette);
+        }
+      }
+    }
+  } else {
+    // ── Nature decorations (random scatter) ──
+    for (let dx = -pad; dx < worldW + pad; dx += DECOR_STEP) {
+      for (let dy = -pad; dy < worldH + pad; dy += DECOR_STEP) {
+        const r = seededRand(dx * 7, dy * 13);
+        if (r < 0.15 && !overlapsRoom(dx, dy, 24, rooms, 20)) {
+          drawTree(decorations, dx + seededRand(dx, dy * 3) * 20, dy + seededRand(dy, dx * 5) * 20, palette);
+        } else if (r < 0.22 && !overlapsRoom(dx, dy, 14, rooms, 16)) {
+          drawBush(decorations, dx + seededRand(dx * 2, dy) * 16, dy + seededRand(dy * 2, dx) * 16, palette);
+        } else if (r < 0.30 && !overlapsRoom(dx, dy, 6, rooms, 10)) {
+          drawFlower(
+            decorations,
+            dx + seededRand(dx * 3, dy) * 20,
+            dy + seededRand(dy * 3, dx) * 20,
+            palette.flowerColors[Math.floor(seededRand(dx, dy * 7) * palette.flowerColors.length)],
+            palette,
+          );
+        } else if (r < 0.34 && !overlapsRoom(dx, dy, 8, rooms, 12)) {
+          drawStone(decorations, dx + seededRand(dx * 5, dy) * 16, dy + seededRand(dy * 5, dx) * 16, palette);
+        }
       }
     }
   }
 
-  ground.addChild(decorations);
-  return ground;
+  return decorations;
+}
+
+function hexToNum(hex: string): number {
+  return parseInt(hex.replace("#", ""), 16);
 }
 
 /** Find a spawn point outside all rooms (near the first room's door) */
@@ -223,6 +408,7 @@ export default function SpatialCanvas() {
   const [dialogueAgent, setDialogueAgent] = useState<Agent | null>(null);
   const dialogueOpenRef = useRef(false);
   const organization = useAppStore((s) => s.organization);
+  const mapTheme = useAppStore((s) => s.mapTheme);
 
   // Keyboard event handlers
   useEffect(() => {
@@ -277,9 +463,14 @@ export default function SpatialCanvas() {
     const app = new Application();
     appRef.current = app;
 
+    const palette = getThemePalette(mapTheme);
+
     (async () => {
+      // Set pixel-perfect (nearest-neighbor) scaling for all textures
+      TextureSource.defaultOptions.scaleMode = "nearest";
+
       await app.init({
-        background: "#3D6B33",
+        background: palette.background,
         width: div.clientWidth,
         height: div.clientHeight,
         antialias: false,
@@ -293,6 +484,13 @@ export default function SpatialCanvas() {
       }
 
       div.appendChild(app.canvas as HTMLCanvasElement);
+
+      // Preload retro font before creating any text textures
+      try {
+        await document.fonts.load('8px "Press Start 2P"');
+      } catch {
+        // Font may not be available yet, continue anyway
+      }
 
       // Create viewport
       const viewport = new Viewport({
@@ -334,9 +532,17 @@ export default function SpatialCanvas() {
       viewport.worldWidth = worldWidth;
       viewport.worldHeight = worldHeight;
 
-      // Draw ground layer BEFORE rooms and avatars
-      const groundLayer = createGroundLayer(worldWidth, worldHeight, rooms);
+      // Generate tileset and tiled ground layer
+      const tileset = generateTileset(app.renderer, palette);
+      const { ground: groundLayer, ponds } = createTiledGround(
+        app.renderer, worldWidth, worldHeight, rooms, tileset, palette,
+      );
       viewport.addChild(groundLayer);
+
+      // Add decoration overlay (trees, bushes, flowers, stones) on top of tiled ground
+      const decorOverlay = createDecorationOverlay(worldWidth, worldHeight, rooms, palette);
+      decorOverlay.zIndex = 2;
+      viewport.addChild(decorOverlay);
 
       // Load sprite sheet before creating avatars
       await loadSpriteSheet();
@@ -361,6 +567,15 @@ export default function SpatialCanvas() {
       // Render departments and agents
       const avatarContainers: (Container & { _baseY: number; _agentStatus: string })[] = [];
       const agentPositionMap: { agent: Agent; x: number; y: number; container: Container }[] = [];
+
+      // Build room data with vendor colors for environment animations
+      const roomsWithVendor = organization.departments.map((dept) => ({
+        x: dept.layout.x,
+        y: dept.layout.y,
+        w: dept.layout.width,
+        h: dept.layout.height,
+        vendorColor: hexToNum(getVendorColor(dept.primaryVendor)),
+      }));
 
       for (const dept of organization.departments) {
         const roomContainer = createDepartmentRoom(dept, (d) => {
@@ -406,6 +621,13 @@ export default function SpatialCanvas() {
             container: avatar,
           });
         }
+      }
+
+      // === Create animated environment objects ===
+      const animatedObjects: AnimatedDecoration[] = createEnvironmentAnimations(roomsWithVendor, ponds, palette);
+      for (const anim of animatedObjects) {
+        anim.container.zIndex = 5; // above ground, below agents
+        viewport.addChild(anim.container);
       }
 
       // === Create Player Character ===
@@ -461,6 +683,11 @@ export default function SpatialCanvas() {
             avatar.scale.set(pulse);
           }
         }
+
+        // Update animated environment objects
+        for (const anim of animatedObjects) {
+          anim.update(elapsed);
+        }
       });
 
       // Handle resize
@@ -501,7 +728,7 @@ export default function SpatialCanvas() {
       appRef.current = null;
       viewportRef.current = null;
     };
-  }, [organization]);
+  }, [organization, mapTheme]);
 
   const handleZoomIn = useCallback(() => {
     const vp = viewportRef.current;

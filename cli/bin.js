@@ -20,6 +20,7 @@ import { pushCommand } from "./commands/push.mjs";
 import { statusCommand } from "./commands/status.mjs";
 import { whoamiCommand } from "./commands/whoami.mjs";
 import { logoutCommand } from "./commands/logout.mjs";
+import { connectCommand } from "./commands/connect.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(__dirname, "package.json"), "utf-8"));
@@ -55,5 +56,10 @@ program
   .command("logout")
   .description("Remove global config and log out")
   .action(logoutCommand);
+
+program
+  .command("connect")
+  .description("Poll hub and relay messages to local OpenClaw Gateway")
+  .action(connectCommand);
 
 program.parse();

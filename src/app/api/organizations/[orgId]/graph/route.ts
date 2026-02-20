@@ -292,6 +292,8 @@ async function loadOrganization(orgId: string): Promise<Organization | null> {
         position: { x: agent.pos_x, y: agent.pos_y },
         skills, plugins, mcpTools, resources: [], usageHistory, humanId: null,
         registeredBy: agent.registered_by ?? null,
+        runtimeType: agent.runtime_type ?? "api",
+        gatewayUrl: agent.gateway_url ?? "",
         lastActive: agent.last_active, createdAt: agent.created_at,
       };
     });
@@ -312,7 +314,7 @@ async function loadOrganization(orgId: string): Promise<Organization | null> {
   });
 
   return {
-    id: org.id, name: org.name, totalBudget: org.total_budget, departments: depts,
+    id: org.id, name: org.name, totalBudget: org.total_budget, visibility: org.visibility ?? "private", departments: depts,
   };
 }
 

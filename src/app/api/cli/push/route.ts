@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import { getSupabase } from "@/db/supabase";
 
 /**
@@ -144,6 +145,8 @@ export async function POST(request: NextRequest) {
     context,
     memberId,
     repoUrl,
+    runtimeType,
+    gatewayUrl,
     detectedSubscriptions,
   } = body;
 
@@ -215,6 +218,21 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Generate poll_token for openclaw agents without one
+      let pollToken: string | undefined;
+      if (runtimeType === "openclaw") {
+        const { data: currentAgent } = await supabase
+          .from("agents")
+          .select("poll_token")
+          .eq("id", agentId)
+          .single();
+        if (!currentAgent?.poll_token) {
+          pollToken = randomBytes(32).toString("hex");
+        } else {
+          pollToken = currentAgent.poll_token;
+        }
+      }
+
       // Update agent fields
       const { error: updateError } = await supabase
         .from("agents")
@@ -225,6 +243,9 @@ export async function POST(request: NextRequest) {
           dept_id: newDeptId,
           description: description || `Pushed via CLI at ${new Date().toISOString()}`,
           last_active: new Date().toISOString(),
+          ...(runtimeType !== undefined && { runtime_type: runtimeType }),
+          ...(gatewayUrl !== undefined && { gateway_url: gatewayUrl }),
+          ...(pollToken !== undefined && { poll_token: pollToken }),
         })
         .eq("id", agentId);
 
@@ -296,6 +317,7 @@ export async function POST(request: NextRequest) {
         id: agentId,
         updated: true,
         message: `Agent "${agentName}" updated successfully`,
+        ...(pollToken && { pollToken }),
       });
     }
 
@@ -336,6 +358,9 @@ export async function POST(request: NextRequest) {
   const newAgentId = `agent-${Date.now()}`;
   const now = new Date().toISOString();
 
+  // Generate poll_token for openclaw agents
+  const newPollToken = runtimeType === "openclaw" ? randomBytes(32).toString("hex") : undefined;
+
   const { error: insertError } = await supabase.from("agents").insert({
     id: newAgentId,
     dept_id: deptId,
@@ -351,6 +376,9 @@ export async function POST(request: NextRequest) {
     last_active: now,
     created_at: now,
     registered_by: memberId || null,
+    runtime_type: runtimeType || "api",
+    gateway_url: gatewayUrl || "",
+    ...(newPollToken && { poll_token: newPollToken }),
   });
 
   if (insertError) {
@@ -416,6 +444,7 @@ export async function POST(request: NextRequest) {
       departmentId: deptId,
       updated: false,
       message: `Agent "${agentName}" registered successfully`,
+      ...(newPollToken && { pollToken: newPollToken }),
     },
     { status: 201 },
   );

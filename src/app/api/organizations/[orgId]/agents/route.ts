@@ -126,6 +126,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     pos_x: posX,
     pos_y: posY,
     human_id: body.humanId ?? null,
+    runtime_type: body.runtimeType ?? "api",
+    gateway_url: body.gatewayUrl ?? "",
     last_active: now,
     created_at: now,
   });

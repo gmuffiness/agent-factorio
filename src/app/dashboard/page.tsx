@@ -22,6 +22,7 @@ export default function DashboardPage() {
   const [showJoin, setShowJoin] = useState(false);
   const [createName, setCreateName] = useState("");
   const [createBudget, setCreateBudget] = useState("");
+  const [createVisibility, setCreateVisibility] = useState<"private" | "public">("private");
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState("");
 
@@ -50,7 +51,7 @@ export default function DashboardPage() {
     const res = await fetch("/api/organizations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: createName.trim(), budget: Number(createBudget) || 0 }),
+      body: JSON.stringify({ name: createName.trim(), budget: Number(createBudget) || 0, visibility: createVisibility }),
     });
     if (!res.ok) {
       const data = await res.json();
@@ -169,6 +170,38 @@ export default function DashboardPage() {
                 className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-sm placeholder-slate-500 focus:border-blue-500 focus:outline-none"
                 min={0}
               />
+              <div>
+                <label className="mb-1.5 block text-sm text-slate-400">Visibility</label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCreateVisibility("private")}
+                    className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+                      createVisibility === "private"
+                        ? "border-blue-500 bg-blue-500/10 text-blue-300"
+                        : "border-slate-600 bg-slate-800 text-slate-400 hover:border-slate-500"
+                    }`}
+                  >
+                    <span>Private</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCreateVisibility("public")}
+                    className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+                      createVisibility === "public"
+                        ? "border-blue-500 bg-blue-500/10 text-blue-300"
+                        : "border-slate-600 bg-slate-800 text-slate-400 hover:border-slate-500"
+                    }`}
+                  >
+                    <span>Public</span>
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  {createVisibility === "private"
+                    ? "Only invited members can see this organization."
+                    : "Anyone can discover this organization."}
+                </p>
+              </div>
               <div className="flex gap-3">
                 <button
                   onClick={handleCreate}

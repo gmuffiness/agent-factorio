@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { ConversationList } from "./ConversationList";
 import { ChatMessages } from "./ChatMessages";
 import { ChatInput } from "./ChatInput";
@@ -23,6 +23,7 @@ interface StreamingAgent {
   agentId: string;
   agentName: string;
   agentVendor?: string;
+  runtimeType?: string;
   text: string;
 }
 
@@ -39,6 +40,8 @@ export function ChatPage({ orgId }: ChatPageProps) {
   const [isSending, setIsSending] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
+  const [waitingForAgent, setWaitingForAgent] = useState<{ agentId: string; agentName: string } | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Derive agents from store instead of separate API call
   const agents = useMemo<AgentItem[]>(() =>
@@ -83,6 +86,54 @@ export function ChatPage({ orgId }: ChatPageProps) {
     }
     fetchMessages();
   }, [orgId, selectedConvId]);
+
+  // Cleanup poll timer on unmount
+  useEffect(() => {
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    };
+  }, []);
+
+  // Poll for async agent responses (queued openclaw agents)
+  const startAsyncPoll = useCallback((convId: string, agentId: string, agentName: string) => {
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+
+    setWaitingForAgent({ agentId, agentName });
+    const lastMessageCount = messages.length;
+    let elapsed = 0;
+    const maxWait = 5 * 60 * 1000; // 5 minutes
+
+    pollTimerRef.current = setInterval(async () => {
+      elapsed += 3000;
+      if (elapsed > maxWait) {
+        if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+        setWaitingForAgent(null);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/organizations/${orgId}/conversations/${convId}/messages`);
+        if (!res.ok) return;
+        const newMessages = await res.json();
+        // Check if there are new assistant messages from this agent
+        const hasNewResponse = newMessages.length > lastMessageCount &&
+          newMessages.some((m: { role: string; agent_id?: string; agentId?: string; createdAt?: string }) =>
+            m.role === "assistant" && (m.agent_id === agentId || m.agentId === agentId)
+          );
+
+        if (hasNewResponse) {
+          setMessages(newMessages);
+          setWaitingForAgent(null);
+          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+          pollTimerRef.current = null;
+          fetchConversations();
+        }
+      } catch {
+        // Ignore poll errors
+      }
+    }, 3000);
+  }, [messages.length, orgId, fetchConversations]);
 
   const handleNewConversation = () => {
     setShowNewChat(true);
@@ -214,6 +265,7 @@ export function ChatPage({ orgId }: ChatPageProps) {
                 agentId: data.agentId,
                 agentName: data.agentName,
                 agentVendor: data.agentVendor,
+                runtimeType: data.runtimeType,
                 text: "",
               });
             }
@@ -240,6 +292,17 @@ export function ChatPage({ orgId }: ChatPageProps) {
               setStreamingAgent(null);
               currentAgentText = "";
               currentAgentId = "";
+            }
+
+            if (data.queued) {
+              // OpenClaw agent without gateway — start async polling
+              const pollConvId = data.conversationId || selectedConvId;
+              if (pollConvId) {
+                startAsyncPoll(pollConvId, data.agentId, data.agentName);
+              }
+              if (data.conversationId && data.conversationId !== selectedConvId) {
+                setSelectedConvId(data.conversationId);
+              }
             }
 
             if (data.done) {
@@ -337,6 +400,7 @@ export function ChatPage({ orgId }: ChatPageProps) {
             <ChatMessages
               messages={messages}
               streamingAgent={streamingAgent}
+              waitingForAgent={waitingForAgent}
             />
             <ChatInput onSend={handleSendMessage} disabled={isSending} />
           </>

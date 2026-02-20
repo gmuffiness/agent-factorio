@@ -9,13 +9,20 @@ interface StreamingAgent {
   agentId: string;
   agentName: string;
   agentVendor?: string;
+  runtimeType?: string;
   text: string;
+}
+
+interface WaitingForAgent {
+  agentId: string;
+  agentName: string;
 }
 
 interface ChatMessagesProps {
   messages: Message[];
   streamingText?: string;
   streamingAgent?: StreamingAgent | null;
+  waitingForAgent?: WaitingForAgent | null;
 }
 
 const vendorBadgeClass: Record<string, string> = {
@@ -24,12 +31,12 @@ const vendorBadgeClass: Record<string, string> = {
   google: "bg-blue-500/20 text-blue-400",
 };
 
-export function ChatMessages({ messages, streamingText, streamingAgent }: ChatMessagesProps) {
+export function ChatMessages({ messages, streamingText, streamingAgent, waitingForAgent }: ChatMessagesProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamingText, streamingAgent]);
+  }, [messages, streamingText, streamingAgent, waitingForAgent]);
 
   if (messages.length === 0 && !streamingText && !streamingAgent) {
     return (
@@ -45,6 +52,21 @@ export function ChatMessages({ messages, streamingText, streamingAgent }: ChatMe
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
+        {streamingAgent && !streamingAgent.text && streamingAgent.runtimeType === "cloud" && (
+          <div className="flex justify-start">
+            <div className="max-w-[70%] rounded-2xl bg-slate-700/60 px-4 py-3 text-slate-300">
+              <div className="flex items-center gap-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-purple-400 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-purple-500" />
+                </span>
+                <span className="text-sm">
+                  <span className="font-medium text-white">{streamingAgent.agentName}</span> is analyzing the repository...
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
         {streamingAgent && streamingAgent.text && (
           <div className="flex justify-start">
             <div className="max-w-[70%] rounded-2xl bg-slate-700 px-4 py-2.5 text-slate-100">
@@ -58,6 +80,22 @@ export function ChatMessages({ messages, streamingText, streamingAgent }: ChatMe
               </div>
               <p className="whitespace-pre-wrap text-sm leading-relaxed">{streamingAgent.text}</p>
               <span className="inline-block h-4 w-1 animate-pulse bg-slate-400" />
+            </div>
+          </div>
+        )}
+        {/* Waiting for async agent response (polling relay) */}
+        {waitingForAgent && !streamingAgent && (
+          <div className="flex justify-start">
+            <div className="max-w-[70%] rounded-2xl bg-slate-700/60 px-4 py-3 text-slate-300">
+              <div className="flex items-center gap-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-yellow-500" />
+                </span>
+                <span className="text-sm">
+                  Waiting for <span className="font-medium text-white">{waitingForAgent.agentName}</span> to respond...
+                </span>
+              </div>
             </div>
           </div>
         )}

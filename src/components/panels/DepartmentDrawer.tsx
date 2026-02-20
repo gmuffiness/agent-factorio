@@ -8,6 +8,7 @@ import CostTrendChart from "@/components/charts/CostTrendChart";
 import type { Vendor } from "@/types";
 
 export function DepartmentDrawer() {
+  const selectedDepartmentId = useAppStore((s) => s.selectedDepartmentId);
   const getSelectedDepartment = useAppStore((s) => s.getSelectedDepartment);
   const selectDepartment = useAppStore((s) => s.selectDepartment);
   const selectAgent = useAppStore((s) => s.selectAgent);

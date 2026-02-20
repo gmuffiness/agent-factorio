@@ -158,9 +158,9 @@ export class PlayerCharacter {
     const label = new Text({
       text: name,
       style: {
-        fontFamily: "monospace",
-        fontSize: 8,
-        fontWeight: "700",
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: 6,
+        fontWeight: "400",
         fill: "#FFFFFF",
       },
     });
@@ -196,7 +196,7 @@ export class PlayerCharacter {
 
     const keyText = new Text({
       text: "E",
-      style: { fontFamily: "monospace", fontSize: 9, fontWeight: "900", fill: "#60A5FA" },
+      style: { fontFamily: '"Press Start 2P", monospace', fontSize: 7, fontWeight: "400", fill: "#60A5FA" },
     });
     keyText.anchor.set(0.5, 0.5);
     keyText.x = -38;
@@ -205,7 +205,7 @@ export class PlayerCharacter {
 
     const promptText = new Text({
       text: "Talk",
-      style: { fontFamily: "monospace", fontSize: 9, fontWeight: "600", fill: "#E2E8F0" },
+      style: { fontFamily: '"Press Start 2P", monospace', fontSize: 7, fontWeight: "400", fill: "#E2E8F0" },
     });
     promptText.anchor.set(0, 0.5);
     promptText.x = -26;

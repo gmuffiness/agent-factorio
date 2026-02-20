@@ -1,7 +1,9 @@
 export type Vendor = "anthropic" | "openai" | "google";
 export type AgentStatus = "active" | "idle" | "error";
+export type RuntimeType = "openclaw" | "cloud" | "api";
 export type ResourceType = "git_repo" | "database" | "storage";
 export type AccessLevel = "read" | "write" | "admin";
+export type OrgVisibility = "public" | "private";
 export type SkillCategory = "generation" | "review" | "testing" | "documentation" | "debugging" | "deployment";
 
 export interface Skill {
@@ -86,6 +88,8 @@ export interface Agent {
   registeredBy: string | null;
   registeredByMember?: OrgMember | null;
   context?: AgentContext[];
+  runtimeType: RuntimeType;
+  gatewayUrl: string;
 }
 
 export interface Department {
@@ -105,6 +109,7 @@ export interface Organization {
   id: string;
   name: string;
   totalBudget: number;
+  visibility: OrgVisibility;
   inviteCode?: string;
   createdBy?: string;
   departments: Department[];
@@ -204,6 +209,22 @@ export const SERVICE_PRESETS = [
   { name: "OpenAI API", category: "api" as const, costType: "api" as const, defaultAmount: 0, billingCycle: "pay_as_you_go" as const },
   { name: "Google AI API", category: "api" as const, costType: "api" as const, defaultAmount: 0, billingCycle: "pay_as_you_go" as const },
 ] as const;
+
+export type QueueItemStatus = "pending" | "processing" | "completed" | "failed";
+
+export interface AgentMessageQueueItem {
+  id: string;
+  agentId: string;
+  conversationId: string;
+  orgId: string;
+  messageContent: string;
+  userMessageId: string | null;
+  status: QueueItemStatus;
+  createdAt: string;
+  processingStartedAt: string | null;
+  completedAt: string | null;
+  errorMessage: string | null;
+}
 
 export type OrgMemberRole = "admin" | "member";
 export type OrgMemberStatus = "active" | "pending";

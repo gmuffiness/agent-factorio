@@ -132,7 +132,7 @@ export function createAgentAvatar(agent: Agent): Container {
 
     const excl = new Text({
       text: "!",
-      style: { fontFamily: "monospace", fontSize: 12, fontWeight: "900", fill: "#FFFFFF" },
+      style: { fontFamily: '"Press Start 2P", monospace', fontSize: 12, fontWeight: "900", fill: "#FFFFFF" },
     });
     excl.anchor.set(0.5, 0.5);
     excl.x = 0;
@@ -163,8 +163,8 @@ export function createAgentAvatar(agent: Agent): Container {
   }
 
   // === Name plate ===
-  const shortName = agent.name.length > 12 ? agent.name.slice(0, 11) + "\u2026" : agent.name;
-  const nameWidth = Math.max(shortName.length * 5.5 + 14, 48);
+  const shortName = agent.name.length > 10 ? agent.name.slice(0, 9) + "\u2026" : agent.name;
+  const nameWidth = Math.max(shortName.length * 6.5 + 14, 48);
 
   const nameBg = new Graphics();
   nameBg.roundRect(-nameWidth / 2, 22, nameWidth, 14, 3);
@@ -177,9 +177,9 @@ export function createAgentAvatar(agent: Agent): Container {
   const nameLabel = new Text({
     text: shortName,
     style: {
-      fontFamily: "monospace",
-      fontSize: 8,
-      fontWeight: "600",
+      fontFamily: '"Press Start 2P", monospace',
+      fontSize: 6,
+      fontWeight: "400",
       fill: "#FFFFFF",
     },
   });
@@ -202,7 +202,7 @@ export function createAgentAvatar(agent: Agent): Container {
 
   const tooltipName = new Text({
     text: agent.name,
-    style: { fontFamily: "monospace", fontSize: 10, fontWeight: "700", fill: "#FFFFFF" },
+    style: { fontFamily: '"Press Start 2P", monospace', fontSize: 8, fontWeight: "400", fill: "#FFFFFF" },
   });
   tooltipName.anchor.set(0.5, 0);
   tooltipName.x = 0;
@@ -211,7 +211,7 @@ export function createAgentAvatar(agent: Agent): Container {
 
   const tooltipMeta = new Text({
     text: `${agent.model}  |  $${agent.monthlyCost}/mo`,
-    style: { fontFamily: "monospace", fontSize: 8, fill: "#94A3B8" },
+    style: { fontFamily: '"Press Start 2P", monospace', fontSize: 6, fill: "#94A3B8" },
   });
   tooltipMeta.anchor.set(0.5, 0);
   tooltipMeta.x = 0;

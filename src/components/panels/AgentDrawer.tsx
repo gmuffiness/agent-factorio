@@ -316,6 +316,8 @@ export function AgentDrawer() {
           humanId: data.human_id ?? data.humanId ?? null,
           registeredBy: data.registered_by ?? data.registeredBy ?? null,
           registeredByMember: data.registeredByMember ?? null,
+          runtimeType: data.runtime_type ?? data.runtimeType ?? "api",
+          gatewayUrl: data.gateway_url ?? data.gatewayUrl ?? "",
           context: data.context ?? [],
         };
         setFetchedAgent(mapped);
