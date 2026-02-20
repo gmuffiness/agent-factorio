@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * AgentFloor CLI — register and manage agents from any project
+ * AgentFactorio CLI — register and manage agents from any project
  *
  * Usage:
- *   npx agentfloor login     # Connect to hub + join organization
- *   npx agentfloor push      # Push agent config to hub
- *   npx agentfloor status    # Show registration status
- *   npx agentfloor whoami    # Show login info
- *   npx agentfloor logout    # Remove global config
+ *   npx agent-factorio login     # Connect to hub + join organization
+ *   npx agent-factorio push      # Push agent config to hub
+ *   npx agent-factorio status    # Show registration status
+ *   npx agent-factorio whoami    # Show login info
+ *   npx agent-factorio logout    # Remove global config
  */
 
 import { readFileSync } from "fs";
@@ -28,13 +28,13 @@ const pkg = JSON.parse(readFileSync(join(__dirname, "package.json"), "utf-8"));
 const program = new Command();
 
 program
-  .name("agentfloor")
-  .description("AgentFloor CLI — AI Agent Fleet Management")
+  .name("agent-factorio")
+  .description("AgentFactorio CLI — AI Agent Fleet Management")
   .version(pkg.version);
 
 program
   .command("login")
-  .description("Connect to an AgentFloor hub and join an organization")
+  .description("Connect to an AgentFactorio hub and join an organization")
   .action(loginCommand);
 
 program

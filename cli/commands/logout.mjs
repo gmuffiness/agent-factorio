@@ -1,5 +1,5 @@
 /**
- * agentfloor logout — Delete global config
+ * agent-factorio logout — Delete global config
  */
 import { deleteGlobalConfig, GLOBAL_CONFIG } from "../lib/config.mjs";
 import { success, warn } from "../lib/log.mjs";

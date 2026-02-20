@@ -1,4 +1,4 @@
-# AgentFloor
+# AgentFactorio
 
 AI Agent Fleet Management — centralized monitoring hub for distributed AI agents.
 
@@ -8,16 +8,16 @@ Visualize your organization's AI agent fleet as a **Gather.town-style spatial ma
 
 ## For AI Agents: Setup Guide
 
-> **This section is written for LLM agents (Claude Code, Codex, etc.) that are asked to "set up AgentFloor" or "register an agent."**
+> **This section is written for LLM agents (Claude Code, Codex, etc.) that are asked to "set up AgentFactorio" or "register an agent."**
 > Read this section first to determine what the user needs, then follow the appropriate path.
 
 ### Step 0: Determine what the user wants
 
 Ask the user **one** question before proceeding:
 
-> "AgentFloor를 어떻게 사용하시겠습니까?"
-> 1. **기존 조직에 에이전트 등록** — 이미 누군가 AgentFloor 허브를 배포해둔 상태. 이 프로젝트(현재 repo)의 에이전트를 기존 조직에 추가하고 싶다.
-> 2. **허브를 직접 배포 (Self-host)** — AgentFloor 허브 자체를 처음부터 세팅하고 싶다.
+> "AgentFactorio를 어떻게 사용하시겠습니까?"
+> 1. **기존 조직에 에이전트 등록** — 이미 누군가 AgentFactorio 허브를 배포해둔 상태. 이 프로젝트(현재 repo)의 에이전트를 기존 조직에 추가하고 싶다.
+> 2. **허브를 직접 배포 (Self-host)** — AgentFactorio 허브 자체를 처음부터 세팅하고 싶다.
 
 User's answer determines which path to follow below.
 
@@ -26,7 +26,7 @@ User's answer determines which path to follow below.
 ### Path A: Register agent to an existing organization
 
 **Prerequisites — ask the user for these:**
-1. **Hub URL** — AgentFloor 허브 주소 (예: `https://agentfloor.vercel.app` 또는 `http://localhost:3000`)
+1. **Hub URL** — AgentFactorio 허브 주소 (예: `https://agent-factorio.vercel.app` 또는 `http://localhost:3000`)
 2. **Invite code** — 6자리 초대 코드 (예: `C2M2XF`). 조직 관리자에게 받아야 합니다.
 3. **Agent name** — 에이전트 이름 (기본값: 현재 디렉토리 이름)
 4. **Vendor & Model** — AI 벤더 및 모델 (기본값: `anthropic`, `claude-sonnet-4-6`)
@@ -62,9 +62,9 @@ curl -X POST {HUB_URL}/api/cli/push \
 
 **After registration — save the config:**
 ```bash
-# Save to .agentfloor/config.json (gitignore this file)
-mkdir -p .agentfloor
-cat > .agentfloor/config.json << EOF
+# Save to .agent-factorio/config.json (gitignore this file)
+mkdir -p .agent-factorio
+cat > .agent-factorio/config.json << EOF
 {
   "hubUrl": "{HUB_URL}",
   "orgId": "{ORG_ID}",
@@ -87,7 +87,7 @@ curl -X POST {HUB_URL}/api/cli/push \
 
 ---
 
-### Path B: Self-host the AgentFloor hub
+### Path B: Self-host the AgentFactorio hub
 
 **Prerequisites — ask the user for these:**
 1. **Supabase project** — [supabase.com](https://supabase.com)에서 프로젝트를 생성했는지, 또는 생성을 도와줄지
@@ -97,8 +97,8 @@ curl -X POST {HUB_URL}/api/cli/push \
 
 ```bash
 # 1. Clone & install
-git clone https://github.com/gmuffiness/agentfloor.git
-cd agentfloor
+git clone https://github.com/gmuffiness/agent-factorio.git
+cd agent-factorio
 pnpm install
 
 # 2. Set up Supabase (user must provide credentials)
@@ -144,18 +144,18 @@ CLI manual: [docs/cli.md](docs/cli.md)
 ### Register an agent (CLI)
 
 ```bash
-npx agentfloor login     # Hub 연결 + 조직 참여
-npx agentfloor push      # 에이전트 등록 (자동 감지)
-npx agentfloor status    # 등록 상태 확인
-npx agentfloor whoami    # 로그인 정보 확인
-npx agentfloor logout    # 로그아웃
+npx agent-factorio login     # Hub 연결 + 조직 참여
+npx agent-factorio push      # 에이전트 등록 (자동 감지)
+npx agent-factorio status    # 등록 상태 확인
+npx agent-factorio whoami    # 로그인 정보 확인
+npx agent-factorio logout    # 로그아웃
 ```
 
 ### Deploy the hub
 
 ```bash
-git clone https://github.com/gmuffiness/agentfloor.git
-cd agentfloor
+git clone https://github.com/gmuffiness/agent-factorio.git
+cd agent-factorio
 pnpm install
 # Set up Supabase (see Path B above)
 pnpm dev
@@ -217,7 +217,7 @@ src/
   types/            # TypeScript types
 supabase/
   migrations/       # PostgreSQL schema migrations (9 files)
-cli/                # Standalone CLI (npx agentfloor)
+cli/                # Standalone CLI (npx agent-factorio)
 scripts/            # Session hook, CLI utilities
 .claude-plugin/     # Plugin manifest
 ```

@@ -8,21 +8,22 @@ import type { Agent } from "@/types";
  * Sprite sheet layout (384x672, 32x32 cells):
  *   12 cols x 21 rows. Each character = 3 frames (stand, walk-left, walk-right).
  *   4 characters per row. Row 0 is special, rows 1-20 are usable characters.
- *   Col 0 = front-facing, col 1 = front-variant, col 2 = back, col 3 = side.
+ *   Group 0 (cols 0-2) = Down/Front, Group 1 (cols 3-5) = Front-variant,
+ *   Group 2 (cols 6-8) = Back/Up, Group 3 (cols 9-11) = Side(Left).
  */
 
 const SPRITE_SIZE = 32;
 const CHARS_PER_ROW = 4;
 const FRAMES_PER_CHAR = 3;
-const PLAYER_SPEED = 3;
+const PLAYER_SPEED = 200; // pixels per second (delta-time based)
 const PLAYER_SCALE = 1.6;
 const INTERACTION_RADIUS = 70;
 const WALK_FRAME_INTERVAL = 0.15; // seconds between walk frames
 // RPG walk cycle: neutral → step-left → neutral → step-right
 const WALK_CYCLE = [0, 1, 0, 2];
 
-// Direction → character column in sprite sheet
-// Col 0 = front, col 1 = front-variant, col 2 = back, col 3 = side
+// Direction → sprite group index in the sheet (each group = 3 walk frames)
+// Group 0 = Down/Front, Group 2 = Back/Up, Group 3 = Side(Left, flipped for Right)
 enum Direction {
   Down = 0,
   Up = 2,
@@ -70,6 +71,8 @@ export class PlayerCharacter {
   private nearestAgent: NearbyAgent | null = null;
   // Pre-cached textures: [direction][frame] to avoid creating Texture objects every tick
   private frameCache: Map<number, Texture> = new Map();
+  private _lastTextureKey: number = -1;
+  private _lastScaleX: number = 0;
 
   constructor(
     spawnX: number,
@@ -266,8 +269,8 @@ export class PlayerCharacter {
         this.direction = Direction.Down;
       }
 
-      const newX = this.x + dx * PLAYER_SPEED;
-      const newY = this.y + dy * PLAYER_SPEED;
+      const newX = this.x + dx * PLAYER_SPEED * dt;
+      const newY = this.y + dy * PLAYER_SPEED * dt;
 
       // Collision check — try X and Y independently for wall sliding
       const canMoveX = !this.collidesWithRooms(newX, this.y, rooms);
@@ -287,9 +290,20 @@ export class PlayerCharacter {
       this.walkTimer = 0;
     }
 
-    // Update sprite texture and flip for left/right
-    this.sprite.texture = this.getCachedFrame(this.direction, WALK_CYCLE[this.frameIndex]);
-    this.sprite.scale.x = (this.direction === Direction.Side && !this.facingRight ? -1 : 1) * PLAYER_SCALE;
+    // Update sprite texture — back/up and side views use standing frame only (walk frames look off-angle)
+    const walkFrame = this.direction === Direction.Down ? WALK_CYCLE[this.frameIndex] : 0;
+    const textureKey = this.direction * 10 + walkFrame;
+    if (this._lastTextureKey !== textureKey) {
+      this._lastTextureKey = textureKey;
+      this.sprite.texture = this.getCachedFrame(this.direction, walkFrame);
+    }
+
+    // Flip sprite for left movement — only update scale.x when it changes
+    const scaleX = (this.direction === Direction.Side && !this.facingRight ? -1 : 1) * PLAYER_SCALE;
+    if (this._lastScaleX !== scaleX) {
+      this._lastScaleX = scaleX;
+      this.sprite.scale.x = scaleX;
+    }
 
     // Update container position
     this.container.x = this.x;

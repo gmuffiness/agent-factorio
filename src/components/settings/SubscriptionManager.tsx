@@ -143,7 +143,7 @@ export default function SubscriptionManager({ orgId, memberId }: SubscriptionMan
     <div>
       {subscriptions.length === 0 && !showAdd ? (
         <p className="text-sm text-slate-400 mb-4">
-          No subscriptions registered yet. Add your AI service subscriptions or run <code className="bg-slate-900 px-1 rounded">agentfloor push</code> to auto-detect.
+          No subscriptions registered yet. Add your AI service subscriptions or run <code className="bg-slate-900 px-1 rounded">agent-factorio push</code> to auto-detect.
         </p>
       ) : (
         <table className="w-full text-sm mb-4">

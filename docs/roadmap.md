@@ -77,7 +77,7 @@
 - **해야 할 것**:
   - "이 스킬을 내 에이전트에도 추가" 액션
   - 인기도/사용 빈도 기반 정렬
-  - CLI에서 `agentfloor recommend` 명령어
+  - CLI에서 `agent-factorio recommend` 명령어
   - 에이전트 간 공유 스킬 하이라이트
 
 ### Tier 3: 높은 Impact, 높은 Effort (장기)
@@ -88,7 +88,7 @@
   - 에이전트 설정을 "템플릿"으로 저장/공유/복제
   - 새 테이블 (`agent_templates`, `template_installs`)
   - 마켓플레이스 UI 페이지
-  - CLI에서 `agentfloor clone <template-id>` 명령어
+  - CLI에서 `agent-factorio clone <template-id>` 명령어
 - **범위 결정**: 조직 내부만 vs 조직 간 공유
 
 #### 8. 에이전트 간 자동 협업

@@ -1,13 +1,13 @@
 /**
- * Global (~/.agentfloor/config.json) and local (.agentfloor/config.json) config management
+ * Global (~/.agent-factorio/config.json) and local (.agent-factorio/config.json) config management
  */
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 
-const GLOBAL_DIR = path.join(os.homedir(), ".agentfloor");
+const GLOBAL_DIR = path.join(os.homedir(), ".agent-factorio");
 const GLOBAL_CONFIG = path.join(GLOBAL_DIR, "config.json");
-const LOCAL_DIR_NAME = ".agentfloor";
+const LOCAL_DIR_NAME = ".agent-factorio";
 const LOCAL_CONFIG_NAME = "config.json";
 
 // --- Global config ---

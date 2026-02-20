@@ -1,5 +1,5 @@
 /**
- * agentfloor status — Show registration status for current project
+ * agent-factorio status — Show registration status for current project
  */
 import { readLocalConfig, getDefaultOrg, findProjectRoot } from "../lib/config.mjs";
 import { label, heading, warn, success } from "../lib/log.mjs";
@@ -18,7 +18,7 @@ export async function statusCommand() {
     label("Invite code", org.inviteCode);
     label("Hub URL", org.hubUrl);
   } else {
-    warn("Not logged in. Run `agentfloor login` first.");
+    warn("Not logged in. Run `agent-factorio login` first.");
   }
 
   console.log();
@@ -30,7 +30,7 @@ export async function statusCommand() {
   heading("Agent");
   if (!localConfig) {
     warn("No agent registered in this project.");
-    console.log('Run `agentfloor push` to register.');
+    console.log('Run `agent-factorio push` to register.');
     return;
   }
 

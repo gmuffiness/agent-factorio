@@ -60,20 +60,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   sidebarCollapsed: false,
   lastFetchedAt: 0,
   mapTheme: (typeof window !== "undefined"
-    ? (localStorage.getItem("agentfloor-map-theme") as MapThemeId | null) ?? "city"
+    ? (localStorage.getItem("agent-factorio-map-theme") as MapThemeId | null) ?? "city"
     : "city") as MapThemeId,
   announcements: [],
 
   setCurrentOrgId: (orgId) => set({ currentOrgId: orgId }),
 
   setMapTheme: (theme) => {
-    localStorage.setItem("agentfloor-map-theme", theme);
+    localStorage.setItem("agent-factorio-map-theme", theme);
     set({ mapTheme: theme });
   },
 
   toggleSidebar: () => {
     const next = !get().sidebarCollapsed;
-    localStorage.setItem("agentfloor-sidebar-collapsed", JSON.stringify(next));
+    localStorage.setItem("agent-factorio-sidebar-collapsed", JSON.stringify(next));
     set({ sidebarCollapsed: next });
   },
 

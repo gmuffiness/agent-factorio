@@ -1,5 +1,5 @@
 /**
- * agentfloor connect — Poll hub for messages, relay to local OpenClaw Gateway
+ * agent-factorio connect — Poll hub for messages, relay to local OpenClaw Gateway
  */
 import { readLocalConfig, findProjectRoot } from "../lib/config.mjs";
 import { success, error, info, label, heading } from "../lib/log.mjs";
@@ -13,8 +13,8 @@ export async function connectCommand() {
 
   if (!localConfig?.agentId || !localConfig?.hubUrl || !localConfig?.pollToken) {
     error(
-      "Missing agentId, hubUrl, or pollToken in .agentfloor/config.json.\n" +
-      "Run `agentfloor push` with runtimeType=openclaw first."
+      "Missing agentId, hubUrl, or pollToken in .agent-factorio/config.json.\n" +
+      "Run `agent-factorio push` with runtimeType=openclaw first."
     );
     process.exit(1);
   }
@@ -27,7 +27,7 @@ export async function connectCommand() {
     "Content-Type": "application/json",
   };
 
-  heading("AgentFloor Connector");
+  heading("AgentFactorio Connector");
   label("Agent", agentName || agentId);
   label("Hub", hubUrl);
   label("Gateway", LOCAL_GATEWAY_URL);

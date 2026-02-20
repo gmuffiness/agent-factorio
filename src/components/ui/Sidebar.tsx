@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppStore } from "@/stores/app-store";
@@ -121,6 +122,23 @@ export function Sidebar() {
   const pathname = usePathname();
   const orgBase = `/org/${orgId}`;
 
+  const [currentUser, setCurrentUser] = useState<{ name: string; email: string | null } | null>(null);
+
+  const fetchCurrentUser = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/organizations/${orgId}/members`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const currentId = data.currentMemberId;
+      const member = (data.members ?? []).find((m: { id: string; name: string; email: string | null }) => m.id === currentId);
+      if (member) setCurrentUser({ name: member.name, email: member.email });
+    } catch {
+      // ignore
+    }
+  }, [orgId]);
+
+  useEffect(() => { fetchCurrentUser(); }, [fetchCurrentUser]);
+
   return (
     <aside
       className={cn(
@@ -135,7 +153,7 @@ export function Sidebar() {
             🏘️
           </span>
           {!collapsed && (
-            <span className="text-base font-bold text-white truncate">AgentFloor</span>
+            <span className="text-base font-bold text-white truncate">AgentFactorio</span>
           )}
         </Link>
         <button
@@ -180,6 +198,25 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Current User */}
+      {currentUser && (
+        <div className="border-t border-slate-700/50 px-3 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-medium text-white">
+              {currentUser.name.charAt(0).toUpperCase()}
+            </div>
+            {!collapsed && (
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium text-white">{currentUser.name}</div>
+                {currentUser.email && (
+                  <div className="truncate text-xs text-slate-400">{currentUser.email}</div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

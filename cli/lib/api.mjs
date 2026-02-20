@@ -3,7 +3,7 @@
  */
 
 /**
- * Make an API request to the AgentFloor hub
+ * Make an API request to the AgentFactorio hub
  * @param {string} hubUrl - Base URL of the hub
  * @param {string} path - API path (e.g. "/api/cli/login")
  * @param {{ method?: string, body?: unknown }} [options]

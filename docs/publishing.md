@@ -59,7 +59,7 @@ Hub 웹앱은 Vercel에 연결되어 있어 `main` push 시 자동 배포됩니�
 
 ```bash
 # npm 배포 버전 확인
-npm view agentfloor version
+npm view agent-factorio version
 
 # GitHub Actions 최근 실행 확인
 gh run list --limit 5

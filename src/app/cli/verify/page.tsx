@@ -81,7 +81,7 @@ export default function CliVerifyPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-950 text-zinc-100">
       <div className="mx-4 max-w-md rounded-xl border border-zinc-800 bg-zinc-900 p-8 text-center">
-        <h1 className="mb-4 text-xl font-semibold">AgentFloor CLI Login</h1>
+        <h1 className="mb-4 text-xl font-semibold">AgentFactorio CLI Login</h1>
 
         {status === "loading" && (
           <div className="space-y-3">

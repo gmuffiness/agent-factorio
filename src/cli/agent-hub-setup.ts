@@ -52,7 +52,7 @@ async function detectMcpServers(): Promise<{ name: string; server: string }[]> {
 }
 
 async function main() {
-  console.log("\n  AgentFloor - Agent Hub Setup");
+  console.log("\n  AgentFactorio - Agent Hub Setup");
   console.log("  ===================================\n");
 
   // 1. Hub URL

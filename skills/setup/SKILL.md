@@ -1,6 +1,6 @@
-# AgentFloor Setup Wizard
+# AgentFactorio Setup Wizard
 
-You are running the AgentFloor setup wizard. This registers the current project's Claude Code agent to an AgentFloor monitoring hub.
+You are running the AgentFactorio setup wizard. This registers the current project's Claude Code agent to an AgentFactorio monitoring hub.
 
 ## Auto-Detection (do this FIRST, silently before any questions)
 
@@ -8,16 +8,16 @@ You are running the AgentFloor setup wizard. This registers the current project'
 2. **Skills**: Use Glob to find `.claude/commands/*.md` and `.claude/skills/**/*.md` files. Read each file's first heading to get the skill name.
 3. **MCP servers**: Read `.claude/settings.local.json` and `.claude/settings.json` if they exist. Extract keys from `mcpServers` object.
 4. **Project context (CLAUDE.md)**: Check for `.claude/CLAUDE.md` or root `CLAUDE.md`. If found, read its content — this will be sent as agent context for the chat feature.
-5. **Existing config**: Check if `.agentfloor/config.json` exists. If so, read it — this determines whether this is a first-time or returning setup.
-6. **Global config**: Check if `~/.agentfloor/config.json` exists. This stores the hub URL and known organizations from previous setups on this machine.
+5. **Existing config**: Check if `.agent-factorio/config.json` exists. If so, read it — this determines whether this is a first-time or returning setup.
+6. **Global config**: Check if `~/.agent-factorio/config.json` exists. This stores the hub URL and known organizations from previous setups on this machine.
 
 ## Flow: First-Time Setup (no global config)
 
-If `~/.agentfloor/config.json` does NOT exist, run the full onboarding:
+If `~/.agent-factorio/config.json` does NOT exist, run the full onboarding:
 
 ### Step 1: Hub URL
 
-Ask for the AgentFloor hub URL:
+Ask for the AgentFactorio hub URL:
 - `http://localhost:3000` (local development)
 - A deployed URL (user types it)
 
@@ -45,7 +45,7 @@ Store `orgId`, `orgName`, and `inviteCode` from the response.
 
 ### Step 4: Save Global Config
 
-Save to `~/.agentfloor/config.json` (create `~/.agentfloor/` with `mkdir -p`):
+Save to `~/.agent-factorio/config.json` (create `~/.agent-factorio/` with `mkdir -p`):
 ```json
 {
   "hubUrl": "<url>",
@@ -67,13 +67,13 @@ Then continue to **Agent Registration** (Step A below).
 
 ## Flow: Returning Setup (global config exists)
 
-If `~/.agentfloor/config.json` EXISTS, skip hub/org setup and offer a streamlined flow:
+If `~/.agent-factorio/config.json` EXISTS, skip hub/org setup and offer a streamlined flow:
 
 ### Step R1: Show Current Context
 
-Read `~/.agentfloor/config.json` and display:
+Read `~/.agent-factorio/config.json` and display:
 ```
-AgentFloor Hub: {hubUrl}
+AgentFactorio Hub: {hubUrl}
 Known organizations:
   1. {orgName1} (invite: {code1})
   2. {orgName2} (invite: {code2})
@@ -96,7 +96,7 @@ After org is selected/created, continue to **Agent Registration** (Step A below)
 
 Ask for this agent's display name.
 - Default: project directory name detected earlier (e.g., `cosmax-explorer-api`)
-- If `.agentfloor/config.json` exists in this project, show the previous name
+- If `.agent-factorio/config.json` exists in this project, show the previous name
 
 ### Step B: Department
 
@@ -150,7 +150,7 @@ curl -s -X POST {hubUrl}/api/register \
 
 ### Step F: Save Project Config
 
-Write `.agentfloor/config.json` in the current project (create dir with `mkdir -p .agentfloor`):
+Write `.agent-factorio/config.json` in the current project (create dir with `mkdir -p .agent-factorio`):
 ```json
 {
   "hubUrl": "<url>",
@@ -170,7 +170,7 @@ Write `.agentfloor/config.json` in the current project (create dir with `mkdir -
 
 Display:
 ```
-AgentFloor Setup Complete!
+AgentFactorio Setup Complete!
 
   Hub:        {hubUrl}
   Org:        {orgName}
@@ -185,5 +185,5 @@ Dashboard: {hubUrl}
 ```
 
 Tell the user:
-- Run `/agentfloor-setup` again anytime to reconfigure or register to a different org
+- Run `/agent-factorio-setup` again anytime to reconfigure or register to a different org
 - Share the invite code `{inviteCode}` with teammates so they can join the same org

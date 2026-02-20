@@ -1,5 +1,5 @@
 /**
- * agentfloor push — Detect and push agent config to hub
+ * agent-factorio push — Detect and push agent config to hub
  */
 import * as path from "path";
 import { ask, choose } from "../lib/prompt.mjs";
@@ -12,7 +12,7 @@ export async function pushCommand() {
   // 1. Check login
   const org = getDefaultOrg();
   if (!org) {
-    error("Not logged in. Run `agentfloor login` first.");
+    error("Not logged in. Run `agent-factorio login` first.");
     process.exit(1);
   }
 

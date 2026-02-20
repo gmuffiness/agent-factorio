@@ -184,7 +184,7 @@ Legacy self-registration endpoint for agents. Prefer `POST /api/cli/push` for ne
 
 ## CLI Endpoints
 
-Auth-free endpoints for the `npx agentfloor` CLI. Bypasses Supabase Auth middleware.
+Auth-free endpoints for the `npx agent-factorio` CLI. Bypasses Supabase Auth middleware.
 
 ### `POST /api/cli/login`
 CLI login — create or join an organization via invite code.

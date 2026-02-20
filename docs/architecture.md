@@ -2,9 +2,9 @@
 
 ## Overview
 
-AgentFloor is **"GitHub for AI Agents"** — an enterprise agent registry that centralizes the configuration, status, and relationships of distributed AI agents into a single source of truth. Just as GitHub manages code repositories across an organization, AgentFloor manages agent fleets: what each agent can do (skills, MCP tools), who registered it, which department it belongs to, and whether it's currently active.
+AgentFactorio is **"GitHub for AI Agents"** — an enterprise agent registry that centralizes the configuration, status, and relationships of distributed AI agents into a single source of truth. Just as GitHub manages code repositories across an organization, AgentFactorio manages agent fleets: what each agent can do (skills, MCP tools), who registered it, which department it belongs to, and whether it's currently active.
 
-Individual developers run `npx agentfloor push` from their projects, and their Claude Code agents register to a shared organization. The hub visualizes all agents across the organization in a Gather.town-style spatial dashboard.
+Individual developers run `npx agent-factorio push` from their projects, and their Claude Code agents register to a shared organization. The hub visualizes all agents across the organization in a Gather.town-style spatial dashboard.
 
 See [docs/vision.md](vision.md) for service positioning and competitive landscape.
 
@@ -14,11 +14,11 @@ See [docs/vision.md](vision.md) for service positioning and competitive landscap
 Developer A                    Developer B                    Developer C
 ┌──────────────┐              ┌──────────────┐              ┌──────────────┐
 │ Claude Code  │              │ Claude Code  │              │ Claude Code  │
-│ + AgentFloor │              │ + AgentFloor │              │ + AgentFloor │
+│ + AgentFactorio │              │ + AgentFactorio │              │ + AgentFactorio │
 │   plugin     │              │   plugin     │              │   plugin     │
 └──────┬───────┘              └──────┬───────┘              └──────┬───────┘
        │                             │                             │
-       │  /agentfloor:setup          │  /agentfloor:setup          │  /agentfloor:setup
+       │  /agent-factorio:setup          │  /agent-factorio:setup          │  /agent-factorio:setup
        │  (create org or             │  (join via                  │  (join via
        │   invite code)              │   invite code)              │   invite code)
        │                             │                             │
@@ -26,7 +26,7 @@ Developer A                    Developer B                    Developer C
                      │                             │
                      ▼                             ▼
               ┌─────────────────────────────────────────┐
-              │         AgentFloor Hub (Next.js)         │
+              │         AgentFactorio Hub (Next.js)         │
               │  ┌─────────────────────────────────────┐ │
               │  │     Supabase (PostgreSQL)            │ │
               │  │  Organizations, Agents, Departments  │ │
@@ -126,13 +126,13 @@ supabase/
     007_announcements.sql
     008_agent_registered_by.sql
     009_department_hierarchy.sql
-cli/                      # Standalone CLI (npx agentfloor)
+cli/                      # Standalone CLI (npx agent-factorio)
   bin.mjs                 # Entry point
   commands/               # login, push, status, whoami, logout
   lib/                    # api, config, detect, prompt, log
 skills/
   setup/
-    SKILL.md              # /agentfloor:setup wizard definition
+    SKILL.md              # /agent-factorio:setup wizard definition
 scripts/
   session-start.mjs       # Session start hook (heartbeat + config check)
 hooks/
@@ -144,7 +144,7 @@ hooks/
 
 ## Data Flow
 
-1. **Agent Registration**: Users run `/agentfloor:setup` → creates/joins org → registers agent via `POST /api/register`
+1. **Agent Registration**: Users run `/agent-factorio:setup` → creates/joins org → registers agent via `POST /api/register`
 2. **Session Heartbeat**: On each Claude Code session start, `scripts/session-start.mjs` sends a heartbeat to mark the agent active
 3. **API routes** serve data from Supabase (PostgreSQL)
 4. **Zustand store** (`app-store.ts`) holds the client-side `Organization` state

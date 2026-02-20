@@ -2,9 +2,9 @@
 
 ## One-liner
 
-**AgentFloor — GitHub for AI Agents.**
+**AgentFactorio — GitHub for AI Agents.**
 
-GitHub이 코드의 중앙 저장소이듯, AgentFloor는 에이전트의 중앙 저장소.
+GitHub이 코드의 중앙 저장소이듯, AgentFactorio는 에이전트의 중앙 저장소.
 
 ## 문제
 
@@ -18,11 +18,11 @@ AI 에이전트가 팀 곳곳에 퍼져 있다. 각 개발자가 자기 프로�
 
 ## 해법
 
-`npx agentfloor push` 한 줄로 에이전트를 중앙 허브에 등록. 허브에서 조직 전체의 에이전트 fleet을 시각화하고 관리.
+`npx agent-factorio push` 한 줄로 에이전트를 중앙 허브에 등록. 허브에서 조직 전체의 에이전트 fleet을 시각화하고 관리.
 
 ```
 개발자 A (Claude Code)  ──push──┐
-개발자 B (Claude Code)  ──push──┤──→  AgentFloor Hub  ──→  대시보드
+개발자 B (Claude Code)  ──push──┤──→  AgentFactorio Hub  ──→  대시보드
 개발자 C (Cursor)        ──push──┘     (Supabase DB)       (Spatial Map, Graph, Tables)
 ```
 
@@ -37,7 +37,7 @@ AI 에이전트가 팀 곳곳에 퍼져 있다. 각 개발자가 자기 프로�
                          │
   ───────────────────────┼───────────────────────
                          │
-      AgentFloor         │       Slack/Teams
+      AgentFactorio         │       Slack/Teams
    기업용 에이전트 허브     │     기업용 커뮤니케이션
    (조직이 주체)           │     (사람이 주체)
                          │
@@ -49,14 +49,14 @@ AI 에이전트가 팀 곳곳에 퍼져 있다. 각 개발자가 자기 프로�
 | **Reddit** | 사람을 위한 커뮤니티 | 사람 | 퍼블릭 |
 | **Moltbook** | AI 에이전트를 위한 커뮤니티 | AI 에이전트 | 퍼블릭 |
 | **GitHub** | 코드 저장소 | 개발자 | 퍼블릭 |
-| **AgentFloor** | 에이전트 저장소 (기업용) | 조직/팀 | 프라이빗 |
+| **AgentFactorio** | 에이전트 저장소 (기업용) | 조직/팀 | 프라이빗 |
 
 ## GitHub 비유가 성립하는 이유
 
-| GitHub | AgentFloor |
+| GitHub | AgentFactorio |
 |---|---|
 | 코드 저장소 (Repository) | 에이전트 레지스트리 |
-| `git push`로 코드 등록 | `agentfloor push`로 에이전트 등록 |
+| `git push`로 코드 등록 | `agent-factorio push`로 에이전트 등록 |
 | Organization → Teams → Repos | Organization → Departments → Agents |
 | README, 패키지, 의존성 | Skills, MCP Tools, Plugins |
 | Contributors | Org Members (registered_by) |
@@ -88,9 +88,9 @@ AI 에이전트가 팀 곳곳에 퍼져 있다. 각 개발자가 자기 프로�
 
 ## Moltbook과의 차이점
 
-Moltbook은 흥미로운 실험이지만 AgentFloor과는 근본적으로 다른 문제를 풂:
+Moltbook은 흥미로운 실험이지만 AgentFactorio과는 근본적으로 다른 문제를 풂:
 
-| 관점 | Moltbook | AgentFloor |
+| 관점 | Moltbook | AgentFactorio |
 |---|---|---|
 | **목적** | 에이전트 간 소셜 네트워킹 | 조직의 에이전트 Fleet 관리 |
 | **범위** | 퍼블릭, 누구나 참여 | 프라이빗, 조직 단위 |

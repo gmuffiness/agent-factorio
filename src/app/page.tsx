@@ -43,8 +43,8 @@ function AdminContent({ authHref }: { authHref: string }) {
         </div>
         <div className="flex-1 space-y-3">
           <h3 className="font-semibold">Clone &amp; deploy</h3>
-          <CodeBlock>{`git clone https://github.com/gmuffiness/agentfloor.git
-cd agentfloor
+          <CodeBlock>{`git clone https://github.com/gmuffiness/agent-factorio.git
+cd agent-factorio
 pnpm install && pnpm dev`}</CodeBlock>
         </div>
       </div>
@@ -93,9 +93,9 @@ function DeveloperContent() {
         <p className="text-lg font-medium leading-relaxed text-slate-200">
           Run{" "}
           <code className="rounded-md bg-slate-800 px-2 py-1 font-mono text-emerald-400">
-            npx agentfloor login
+            npx agent-factorio login
           </code>{" "}
-          in your terminal and follow the prompts to join AgentFloor.
+          in your terminal and follow the prompts to join AgentFactorio.
         </p>
       </div>
 
@@ -123,7 +123,7 @@ function DeveloperContent() {
         <p className="text-sm font-medium text-slate-300">
           Then push your agent:
         </p>
-        <CodeBlock>npx agentfloor push</CodeBlock>
+        <CodeBlock>npx agent-factorio push</CodeBlock>
         <p className="text-sm text-slate-400">
           Auto-detects git, skills, MCP tools, and CLAUDE.md.
         </p>
@@ -131,7 +131,7 @@ function DeveloperContent() {
 
       <div className="flex flex-wrap gap-3 pt-2">
         <a
-          href="https://github.com/gmuffiness/agentfloor/blob/main/docs/cli.md"
+          href="https://github.com/gmuffiness/agent-factorio/blob/main/docs/cli.md"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-slate-800"
@@ -140,7 +140,7 @@ function DeveloperContent() {
           <span aria-hidden="true">&rarr;</span>
         </a>
         <a
-          href="https://www.npmjs.com/package/agentfloor"
+          href="https://www.npmjs.com/package/agent-factorio"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-slate-800"
@@ -174,7 +174,7 @@ export default function HomePage() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2.5">
             <span className="text-2xl">🏘️</span>
-            <span className="text-lg font-bold tracking-tight">AgentFloor</span>
+            <span className="text-lg font-bold tracking-tight">AgentFactorio</span>
           </Link>
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
@@ -278,11 +278,11 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-6 text-sm text-slate-500 sm:flex-row sm:justify-between">
           <div className="flex items-center gap-2">
             <span>🏘️</span>
-            <span>AgentFloor</span>
+            <span>AgentFactorio</span>
           </div>
           <div className="flex items-center gap-6">
             <a
-              href="https://github.com/gmuffiness/agentfloor"
+              href="https://github.com/gmuffiness/agent-factorio"
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-slate-300"
@@ -290,7 +290,7 @@ export default function HomePage() {
               GitHub
             </a>
             <a
-              href="https://www.npmjs.com/package/agentfloor"
+              href="https://www.npmjs.com/package/agent-factorio"
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-slate-300"
@@ -298,7 +298,7 @@ export default function HomePage() {
               npm
             </a>
           </div>
-          <p>&copy; {new Date().getFullYear()} AgentFloor. Open source under MIT.</p>
+          <p>&copy; {new Date().getFullYear()} AgentFactorio. Open source under MIT.</p>
         </div>
       </footer>
     </div>

@@ -1,9 +1,9 @@
 <!-- OMC:START -->
 <!-- OMC:END -->
 
-# AgentFloor
+# AgentFactorio
 
-**GitHub for AI Agents** — GitHub이 코드의 중앙 저장소이듯, AgentFloor는 에이전트의 중앙 저장소. 조직 내 AI 에이전트들의 설정, 상태, 관계를 한 곳에서 관리하는 기업용 에이전트 허브.
+**GitHub for AI Agents** — GitHub이 코드의 중앙 저장소이듯, AgentFactorio는 에이전트의 중앙 저장소. 조직 내 AI 에이전트들의 설정, 상태, 관계를 한 곳에서 관리하는 기업용 에이전트 허브.
 
 ## Project Overview
 
@@ -11,9 +11,9 @@ A Next.js 16 app that visualizes organizational AI agent fleets as a Gather.town
 
 See [docs/vision.md](../docs/vision.md) for service positioning, target users, and competitive landscape.
 
-AgentFloor는 두 부분으로 나뉩니다:
+AgentFactorio는 두 부분으로 나뉩니다:
 - **Hub (Self-hosting)** — 이 레포 자체. 대시보드 웹앱 + API 서버를 배포합니다. 팀/회사에서 인프라 관리자가 한 번만 세팅합니다.
-- **Agent Registration** — 각 개발자가 자기 프로젝트(다른 레포)에서 `/agentfloor:setup`을 실행해 허브에 에이전트를 등록합니다.
+- **Agent Registration** — 각 개발자가 자기 프로젝트(다른 레포)에서 `/agent-factorio:setup`을 실행해 허브에 에이전트를 등록합니다.
 
 See [docs/architecture.md](../docs/architecture.md) for full tech stack, architecture diagram, and directory layout.
 
@@ -98,16 +98,16 @@ See [docs/api-reference.md](../docs/api-reference.md) for endpoint reference.
 - `.env*` is gitignored — secrets are never committed to the repository
 - `SUPABASE_SERVICE_ROLE_KEY` is server-side only — never expose in client code (no `NEXT_PUBLIC_` prefix)
 - `NEXT_PUBLIC_SUPABASE_URL` is the only public env var (project URL, not a secret)
-- `.agentfloor/config.json` (local agent config) is gitignored — contains hub URL and agent ID
+- `.agent-factorio/config.json` (local agent config) is gitignored — contains hub URL and agent ID
 - Supabase tables have RLS enabled — all server-side access uses the service role key which bypasses RLS
 - For Vercel deployment, set env vars in the Vercel dashboard (Settings → Environment Variables)
 
-### CLI (`npx agentfloor`)
-- `agentfloor login` — 허브 연결 + 이메일 인증(magic link) + 조직 참여/생성. 글로벌 config에 `memberId`, `userId` 저장 (`~/.agentfloor/config.json`)
-- `agentfloor push` — 현재 프로젝트의 에이전트 설정을 허브에 push (자동 감지: git, skills, MCP, CLAUDE.md). `memberId`를 `registered_by`로 기록
-- `agentfloor status` — 현재 프로젝트 등록 상태 확인
-- `agentfloor whoami` — 로그인 정보 확인
-- `agentfloor logout` — 글로벌 config 삭제
+### CLI (`npx agent-factorio`)
+- `agent-factorio login` — 허브 연결 + 이메일 인증(magic link) + 조직 참여/생성. 글로벌 config에 `memberId`, `userId` 저장 (`~/.agent-factorio/config.json`)
+- `agent-factorio push` — 현재 프로젝트의 에이전트 설정을 허브에 push (자동 감지: git, skills, MCP, CLAUDE.md). `memberId`를 `registered_by`로 기록
+- `agent-factorio status` — 현재 프로젝트 등록 상태 확인
+- `agent-factorio whoami` — 로그인 정보 확인
+- `agent-factorio logout` — 글로벌 config 삭제
 - CLI 소스: `cli/` 디렉토리 (bin.mjs, commands/, lib/)
 - CLI 전용 API: `POST /api/cli/login`, `POST /api/cli/push`
 - **CLI 코드 변경 시 반드시 `cli/package.json` 버전 bump 후 push** — 안 하면 npm 배포가 skip됨
@@ -116,8 +116,8 @@ See [docs/cli.md](../docs/cli.md) for full CLI manual, config format, and troubl
 See [docs/publishing.md](../docs/publishing.md) for npm/Vercel 배포 가이드.
 
 ### Plugin System (Agent Registration — 각 개발자의 프로젝트에서 실행)
-- `/agentfloor:setup` — 다른 프로젝트에서 실행하는 인터랙티브 위자드. 허브 URL 입력 → 조직 생성/참여 → 에이전트 등록
-- Config stored in `.agentfloor/config.json` (gitignored, 각 프로젝트 로컬에 저장)
+- `/agent-factorio:setup` — 다른 프로젝트에서 실행하는 인터랙티브 위자드. 허브 URL 입력 → 조직 생성/참여 → 에이전트 등록
+- Config stored in `.agent-factorio/config.json` (gitignored, 각 프로젝트 로컬에 저장)
 - Session hook sends heartbeat on every Claude Code session start
 - Plugin manifest at `.claude-plugin/plugin.json`
 

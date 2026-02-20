@@ -14,7 +14,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const setSidebarCollapsed = useAppStore((s) => s.setSidebarCollapsed);
 
   useEffect(() => {
-    const stored = localStorage.getItem("agentfloor-sidebar-collapsed");
+    const stored = localStorage.getItem("agent-factorio-sidebar-collapsed");
     if (stored !== null) {
       setSidebarCollapsed(JSON.parse(stored));
     }

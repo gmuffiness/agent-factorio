@@ -12,7 +12,7 @@ export function getDb() {
     if (!fs.existsSync(dbDir)) {
       fs.mkdirSync(dbDir, { recursive: true });
     }
-    const dbPath = path.join(dbDir, "agentfloor.db");
+    const dbPath = path.join(dbDir, "agent-factorio.db");
     const sqlite = new Database(dbPath);
     sqlite.pragma("journal_mode = WAL");
     sqlite.pragma("foreign_keys = ON");

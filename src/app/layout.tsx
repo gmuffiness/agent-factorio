@@ -14,7 +14,7 @@ const pressStart2P = Press_Start_2P({
 });
 
 export const metadata: Metadata = {
-  title: "AgentFloor - AI Agent Fleet Management",
+  title: "AgentFactorio - AI Agent Fleet Management",
   description: "Visualize and manage your AI agent fleet across departments",
 };
 

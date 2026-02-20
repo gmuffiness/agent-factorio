@@ -62,7 +62,7 @@ export async function GET(
 
 /**
  * POST /api/organizations/[orgId]/agents/[id]/push-request
- * Request the agent to run `agentfloor push` on next session start.
+ * Request the agent to run `agent-factorio push` on next session start.
  * Admin only. Creates a special announcement targeting the specific agent.
  */
 export async function POST(
@@ -98,7 +98,7 @@ export async function POST(
   }
 
   const body = await request.json().catch(() => ({}));
-  const message = body.message ?? "Please run agentfloor push to sync your latest configuration.";
+  const message = body.message ?? "Please run agent-factorio push to sync your latest configuration.";
 
   const id = `ann-push-${Date.now()}`;
   const now = new Date();

@@ -49,5 +49,5 @@ next-env.d.ts
 /data/*.db-shm
 /drizzle/
 
-# agentfloor local config
-.agentfloor/
+# agent-factorio local config
+.agent-factorio/

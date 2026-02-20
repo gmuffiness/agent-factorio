@@ -5,6 +5,6 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "sqlite",
   dbCredentials: {
-    url: "./data/agentfloor.db",
+    url: "./data/agent-factorio.db",
   },
 });

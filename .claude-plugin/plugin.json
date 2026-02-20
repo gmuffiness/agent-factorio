@@ -1,14 +1,14 @@
 {
-  "name": "agentfloor",
+  "name": "agent-factorio",
   "version": "0.1.0",
-  "description": "Connect Claude Code agents to AgentFloor monitoring hub",
-  "author": "AgentFloor",
-  "homepage": "https://github.com/your-org/agentfloor",
+  "description": "Connect Claude Code agents to AgentFactorio monitoring hub",
+  "author": "AgentFactorio",
+  "homepage": "https://github.com/your-org/agent-factorio",
   "skills": [
     {
       "name": "setup",
       "path": "skills/setup/SKILL.md",
-      "description": "Set up AgentFloor connection - create/join organization and register agent"
+      "description": "Set up AgentFactorio connection - create/join organization and register agent"
     }
   ],
   "hooks": "hooks/hooks.json"

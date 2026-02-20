@@ -1,4 +1,4 @@
--- AgentFloor: Supabase PostgreSQL schema
+-- AgentFactorio: Supabase PostgreSQL schema
 -- Migrated from SQLite/Drizzle schema
 
 -- ── Organizations ───────────────────────────────────────────────────────────

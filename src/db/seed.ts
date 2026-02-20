@@ -8,7 +8,7 @@ import fs from "fs";
 const dataDir = path.join(process.cwd(), "data");
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
-const dbPath = path.join(dataDir, "agentfloor.db");
+const dbPath = path.join(dataDir, "agent-factorio.db");
 // Remove existing DB for clean seed
 if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
 

@@ -1,5 +1,5 @@
 /**
- * agentfloor whoami — Show login info (hub URL, organizations)
+ * agent-factorio whoami — Show login info (hub URL, organizations)
  */
 import { readGlobalConfig } from "../lib/config.mjs";
 import { label, heading, warn } from "../lib/log.mjs";
@@ -9,7 +9,7 @@ export async function whoamiCommand() {
 
   if (!config || !config.organizations?.length) {
     warn("Not logged in.");
-    console.log('Run `agentfloor login` to connect to a hub.');
+    console.log('Run `agent-factorio login` to connect to a hub.');
     return;
   }
 

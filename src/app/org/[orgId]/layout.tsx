@@ -14,7 +14,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
     setCurrentOrgId(orgId);
     fetchOrganization(orgId);
     // Save last used org to cookie
-    document.cookie = `agentfloor-last-org=${orgId};path=/;max-age=${60 * 60 * 24 * 365}`;
+    document.cookie = `agent-factorio-last-org=${orgId};path=/;max-age=${60 * 60 * 24 * 365}`;
   }, [orgId, setCurrentOrgId, fetchOrganization]);
 
   return <AppShell>{children}</AppShell>;

@@ -396,7 +396,7 @@ export function AgentDrawer() {
                     title={
                       pushStatus.status === "completed"
                         ? `Push completed ${pushStatus.announcement?.ackedAt ? timeAgo(pushStatus.announcement.ackedAt) : ""}`
-                        : "Request agent to run agentfloor push"
+                        : "Request agent to run agent-factorio push"
                     }
                     className={cn(
                       "flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors",
@@ -795,7 +795,7 @@ export function AgentDrawer() {
                     <div className="rounded-xl bg-slate-50 p-6 text-center">
                       <p className="text-sm text-slate-400">No context files registered.</p>
                       <p className="text-xs text-slate-400 mt-1">
-                        Use <code className="bg-slate-100 px-1 rounded">agentfloor push</code> to sync CLAUDE.md and other context.
+                        Use <code className="bg-slate-100 px-1 rounded">agent-factorio push</code> to sync CLAUDE.md and other context.
                       </p>
                     </div>
                   )}

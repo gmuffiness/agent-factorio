@@ -64,7 +64,7 @@ export async function getInstallationToken(
       headers: {
         Authorization: `Bearer ${jwt}`,
         Accept: "application/vnd.github.v3+json",
-        "User-Agent": "AgentFloor-GitHub-App",
+        "User-Agent": "AgentFactorio-GitHub-App",
       },
     }
   );
@@ -94,7 +94,7 @@ export async function getInstallationInfo(
       headers: {
         Authorization: `Bearer ${jwt}`,
         Accept: "application/vnd.github.v3+json",
-        "User-Agent": "AgentFloor-GitHub-App",
+        "User-Agent": "AgentFactorio-GitHub-App",
       },
     }
   );
@@ -123,7 +123,7 @@ export function getInstallationUrl(orgId: string): string {
     throw new Error("Missing GITHUB_APP_CLIENT_ID");
   }
 
-  const appSlug = process.env.GITHUB_APP_SLUG || "agentfloor";
+  const appSlug = process.env.GITHUB_APP_SLUG || "agent-factorio";
   const state = encodeURIComponent(orgId);
   return `https://github.com/apps/${appSlug}/installations/new?state=${state}`;
 }

@@ -18,7 +18,7 @@ export default function SubscriptionBreakdown({ byService, totalCost }: Subscrip
     return (
       <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-gray-400">
         <p>No subscription data yet.</p>
-        <p>Members can add subscriptions in Settings, or run <code className="bg-gray-100 px-1 rounded">agentfloor push</code> to auto-detect.</p>
+        <p>Members can add subscriptions in Settings, or run <code className="bg-gray-100 px-1 rounded">agent-factorio push</code> to auto-detect.</p>
       </div>
     );
   }

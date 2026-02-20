@@ -69,7 +69,7 @@ export function extractGitHubRepo(url: string): RepoInfo | null {
 function githubHeaders(token?: string): Record<string, string> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
-    "User-Agent": "AgentFloor-Cloud-Runtime",
+    "User-Agent": "AgentFactorio-Cloud-Runtime",
   };
   if (token) {
     headers.Authorization = `Bearer ${token}`;

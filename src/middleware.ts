@@ -62,7 +62,7 @@ export async function middleware(request: NextRequest) {
   );
 
   if (matchedRoute) {
-    const lastOrg = request.cookies.get("agentfloor-last-org")?.value;
+    const lastOrg = request.cookies.get("agent-factorio-last-org")?.value;
     if (lastOrg) {
       const newPath = `/org/${lastOrg}${pathname}`;
       return NextResponse.redirect(new URL(newPath, request.url));

@@ -88,7 +88,7 @@ export default function DashboardPage() {
         <div />
         <div className="flex items-center gap-3">
           <span className="text-3xl">🏘️</span>
-          <h1 className="text-3xl font-bold">AgentFloor</h1>
+          <h1 className="text-3xl font-bold">AgentFactorio</h1>
         </div>
         <div className="flex items-center gap-3">
           {displayName && (

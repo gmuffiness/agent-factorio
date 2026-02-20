@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     // Upsert the installation record
     await supabase.from("github_installations").upsert(
       {
-        id: `ghi-${installationId}`,
+        id: `ghi-${state}-${installationId}`,
         org_id: state,
         installation_id: Number(installationId),
         github_account_login: info.account_login,

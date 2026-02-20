@@ -1,71 +1,71 @@
-# agentfloor
+# agent-factorio
 
-CLI for [AgentFloor](https://github.com/your-org/agentfloor) — AI Agent Fleet Management hub.
+CLI for [AgentFactorio](https://github.com/your-org/agent-factorio) — AI Agent Fleet Management hub.
 
 Register and manage your AI agents from any project.
 
 ## Install
 
 ```bash
-npm install -g agentfloor
+npm install -g agent-factorio
 ```
 
 Or use directly with `npx`:
 
 ```bash
-npx agentfloor <command>
+npx agent-factorio <command>
 ```
 
 ## Commands
 
-### `agentfloor login`
+### `agent-factorio login`
 
-Connect to an AgentFloor hub and join an organization.
+Connect to an AgentFactorio hub and join an organization.
 
 ```bash
-npx agentfloor login
+npx agent-factorio login
 ```
 
 Prompts for hub URL and email, then lets you create or join an organization via invite code.
 
-### `agentfloor push`
+### `agent-factorio push`
 
 Detect and push agent configuration to the hub.
 
 ```bash
-npx agentfloor push
+npx agent-factorio push
 ```
 
 Auto-detects git repo, CLAUDE.md, MCP servers, skills, and plugins from the current project directory.
 
-### `agentfloor status`
+### `agent-factorio status`
 
 Show registration status for the current project.
 
 ```bash
-npx agentfloor status
+npx agent-factorio status
 ```
 
-### `agentfloor whoami`
+### `agent-factorio whoami`
 
 Show login info (hub URL, organizations).
 
 ```bash
-npx agentfloor whoami
+npx agent-factorio whoami
 ```
 
-### `agentfloor logout`
+### `agent-factorio logout`
 
 Remove global config and log out.
 
 ```bash
-npx agentfloor logout
+npx agent-factorio logout
 ```
 
 ## Configuration
 
-- Global config: `~/.agentfloor/config.json` (hub URL, member ID, organizations)
-- Project config: `.agentfloor/config.json` (agent ID, hub URL — gitignored)
+- Global config: `~/.agent-factorio/config.json` (hub URL, member ID, organizations)
+- Project config: `.agent-factorio/config.json` (agent ID, hub URL — gitignored)
 
 ## Requirements
 

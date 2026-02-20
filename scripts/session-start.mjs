@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * AgentFloor session-start hook
+ * AgentFactorio session-start hook
  * Runs when a Claude Code session starts.
- * Checks for .agentfloor/config.json and displays connection status.
+ * Checks for .agent-factorio/config.json and displays connection status.
  */
 import fs from "fs";
 import path from "path";
 
-const CONFIG_DIR = ".agentfloor";
+const CONFIG_DIR = ".agent-factorio";
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
 
 // --- Inline detection helpers (self-contained, no external imports) ---
@@ -77,12 +77,12 @@ async function autoPush(config, projectRoot) {
     });
     const data = await res.json().catch(() => null);
     if (res.ok) {
-      process.stderr.write(`[AgentFloor] Auto-push complete: ${data?.message ?? "OK"}\n`);
+      process.stderr.write(`[AgentFactorio] Auto-push complete: ${data?.message ?? "OK"}\n`);
     } else {
-      process.stderr.write(`[AgentFloor] Auto-push failed: ${data?.error ?? res.status}\n`);
+      process.stderr.write(`[AgentFactorio] Auto-push failed: ${data?.error ?? res.status}\n`);
     }
   } catch (err) {
-    process.stderr.write(`[AgentFloor] Auto-push failed: ${err.message}\n`);
+    process.stderr.write(`[AgentFactorio] Auto-push failed: ${err.message}\n`);
   }
 }
 
@@ -92,7 +92,7 @@ function main() {
   // Check if config exists
   if (!fs.existsSync(CONFIG_FILE)) {
     process.stderr.write(
-      "[AgentFloor] Not configured. Run /agentfloor:setup to connect to your monitoring hub.\n"
+      "[AgentFactorio] Not configured. Run /agent-factorio:setup to connect to your monitoring hub.\n"
     );
     return;
   }
@@ -104,7 +104,7 @@ function main() {
     const orgName = config.orgName || "unknown";
 
     process.stderr.write(
-      `[AgentFloor] Connected to ${hubUrl} | Org: ${orgName} | Agent: ${agentName}\n`
+      `[AgentFactorio] Connected to ${hubUrl} | Org: ${orgName} | Agent: ${agentName}\n`
     );
 
     // Heartbeat: notify hub that this agent is active
@@ -130,16 +130,16 @@ function main() {
           if (pushRequests.length > 0) {
             const msg = pushRequests[0].content;
             process.stderr.write(
-              `\n[AgentFloor] Push requested by admin: ${msg}\n`
+              `\n[AgentFactorio] Push requested by admin: ${msg}\n`
             );
-            process.stderr.write(`[AgentFloor] Auto-pushing agent config...\n`);
+            process.stderr.write(`[AgentFactorio] Auto-pushing agent config...\n`);
             await autoPush(config, process.cwd());
           }
 
           // Show regular announcements
           if (regular.length > 0) {
             process.stderr.write(
-              `\n[AgentFloor] ${regular.length}개의 새 공지사항:\n`
+              `\n[AgentFactorio] ${regular.length}개의 새 공지사항:\n`
             );
             for (const a of regular) {
               const prefix = a.priority === "urgent" ? "[urgent]" : "[info]";
@@ -162,7 +162,7 @@ function main() {
         });
     }
   } catch {
-    process.stderr.write("[AgentFloor] Config file corrupted. Run /agentfloor:setup to reconfigure.\n");
+    process.stderr.write("[AgentFactorio] Config file corrupted. Run /agent-factorio:setup to reconfigure.\n");
   }
 }
 

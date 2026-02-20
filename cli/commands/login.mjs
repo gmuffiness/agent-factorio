@@ -1,5 +1,5 @@
 /**
- * agentfloor login — Connect to hub + join organization (with email verification)
+ * agent-factorio login — Connect to hub + join organization (with email verification)
  */
 import { ask, choose } from "../lib/prompt.mjs";
 import { readGlobalConfig, upsertOrg } from "../lib/config.mjs";
@@ -46,7 +46,7 @@ export async function loginCommand() {
   const defaultUrl = existing?.organizations?.[0]?.hubUrl || "";
 
   // 1. Hub URL
-  const hubUrl = await ask("AgentFloor Hub URL", defaultUrl || "http://localhost:3000");
+  const hubUrl = await ask("AgentFactorio Hub URL", defaultUrl || "http://localhost:3000");
   if (!hubUrl) {
     error("Hub URL is required.");
     process.exit(1);
@@ -149,5 +149,5 @@ export async function loginCommand() {
     success(`Joined "${orgName}" (${orgId})`);
   }
 
-  console.log("\nLogged in! Run `agentfloor push` in any project to register an agent.");
+  console.log("\nLogged in! Run `agent-factorio push` in any project to register an agent.");
 }
