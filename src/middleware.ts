@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 const OLD_ROUTES = ["/agents", "/departments", "/graph", "/cost", "/skills"];
-const PUBLIC_ROUTES = ["/login", "/auth/callback", "/cli/", "/"];
-const PUBLIC_API_ROUTES = ["/api/register", "/api/cli/", "/api/public/"];
+const PUBLIC_ROUTES = ["/login", "/auth/callback", "/cli/", "/", "/explore"];
+const PUBLIC_API_ROUTES = ["/api/register", "/api/cli/", "/api/public/", "/api/fork-organization"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -78,6 +78,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|assets/).*)",
+    "/((?!_next/static|_next/image|favicon.ico|assets/|.*\\.png$|.*\\.jpg$|.*\\.svg$|.*\\.ico$).*)",
   ],
 };
