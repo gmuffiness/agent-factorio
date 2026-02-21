@@ -3,11 +3,11 @@
 
 # AgentFactorio
 
-**GitHub for AI Agents** — A centralized hub for managing AI agent configurations, status, and relationships across your organization.
+**All your team's agents, one place.** See who runs which agents, what skills and MCP tools they use, and how much it costs — across every team.
 
 ## Project Overview
 
-A Next.js 16 app that visualizes organizational AI agent fleets as a Gather.town-style spatial map. Departments are rooms, agents are avatars, skills are equipment.
+Every developer now runs multiple AI agents — Claude Code, Cursor, Codex — but as teams grow, nobody has the full picture. AgentFactorio is a central hub — an **agent directory** — where `npx agent-factorio push` auto-detects and registers each agent's config (git repo, MCP servers, skills, vendor & model). The key differentiator is a **Gather.town-style 2D Spatial Map** (Pixi.js) that turns departments into rooms and agents into avatars for at-a-glance fleet visibility.
 
 See [docs/vision.md](../docs/vision.md) for service positioning, target users, and competitive landscape.
 

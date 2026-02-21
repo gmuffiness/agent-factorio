@@ -59,9 +59,25 @@ const navItems = [
     suffix: "/agents",
     label: "Agents",
     icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 8V4H8" />
+        <rect width="16" height="12" x="4" y="8" rx="2" />
+        <path d="M2 14h2" />
+        <path d="M20 14h2" />
+        <path d="M15 13v2" />
+        <path d="M9 13v2" />
+      </svg>
+    ),
+  },
+  {
+    suffix: "/humans",
+    label: "Humans",
+    icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="10" cy="7" r="3" />
-        <path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+        <circle cx="7" cy="7" r="2.5" />
+        <circle cx="14" cy="8" r="2" />
+        <path d="M2 17c0-2.8 2.2-5 5-5s5 2.2 5 5" />
+        <path d="M12 17c0-2 1.3-3.5 3-3.5s3 1.5 3 3.5" />
       </svg>
     ),
   },
@@ -79,9 +95,9 @@ const navItems = [
     suffix: "/cost",
     label: "Cost",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M10 3v14M6 7h8M7 13h6" />
-        <path d="M12 5c0 0-1.5-1-2-1s-2 1-2 2 1.5 1.5 4 2.5 2 3 2 3-1 1.5-2 1.5-2.5-1-2.5-1" />
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" x2="12" y1="2" y2="22" />
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
       </svg>
     ),
   },

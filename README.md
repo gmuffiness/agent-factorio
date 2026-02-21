@@ -2,9 +2,13 @@
 
 [English](README.md) | [한국어](docs/README.ko.md)
 
-**GitHub for AI Agents** — Just as GitHub is the central repository for code, AgentFactorio is the central hub for AI agents. Manage the configuration, status, and relationships of your organization's AI agents from a single place.
+**All your team's agents, one place.** See who runs which agents, what skills and MCP tools they use, and how much it costs — across every team.
 
-Visualize your agent fleet as a **Gather.town-style spatial map**: departments are rooms, agents are avatars, skills are equipment.
+Every developer now runs multiple AI agents — Claude Code, Cursor, Codex — but as teams grow, nobody has the full picture. Who owns which agent? What skills and MCP tools does each department use? How much is it all costing? This information is scattered across local machines, git repos, and vendor consoles.
+
+AgentFactorio fixes this. Run `npx agent-factorio push` and your agent's config — git repo, MCP servers, skills, vendor & model — is auto-detected and registered to a central hub. Just as a company needs a staff directory when headcount grows, your organization needs an **agent directory** when agents grow.
+
+What makes it different: a **Gather.town-style 2D Spatial Map** that turns departments into rooms, agents into avatars, and skills into equipment — so you can see your entire AI fleet at a glance instead of staring at tables and charts.
 
 ---
 
