@@ -1,6 +1,6 @@
 # AgentFactorio Setup Instructions
 
-You are an AI agent being asked to register yourself with AgentFactorio — a centralized hub for managing AI agents across organizations.
+You are an AI agent being asked to register yourself with AgentFactorio — a central agent directory where teams see who runs which agents, what skills and MCP tools they use, and how much it costs.
 
 Follow these steps to register:
 

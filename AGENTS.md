@@ -12,7 +12,7 @@ Open http://localhost:3000. The app uses mock data by default — no database se
 
 ## What This Project Is
 
-AgentFactorio is an AI agent fleet management dashboard. It shows an organization's AI agents (Claude, GPT, Gemini) across departments in a spatial visualization (like Gather.town) and graph view, with cost analytics and skill tracking.
+AgentFactorio is an agent directory for teams. It shows who runs which AI agents (Claude Code, Cursor, Codex, etc.), what skills and MCP tools they use, and how much it costs — across every department. Visualized as a Gather.town-style spatial map and relationship graph, with cost analytics and skill tracking.
 
 ## Architecture Summary
 

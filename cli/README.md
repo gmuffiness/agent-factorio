@@ -1,8 +1,8 @@
 # agent-factorio
 
-CLI for [AgentFactorio](https://github.com/your-org/agent-factorio) — AI Agent Fleet Management hub.
+CLI for [AgentFactorio](https://github.com/gmuffiness/agent-factorio) — All your team's agents, one place.
 
-Register and manage your AI agents from any project.
+Register and manage your AI agents (Claude Code, Cursor, Codex, etc.) from any project.
 
 ## Install
 

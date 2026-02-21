@@ -2,9 +2,9 @@
 
 [English](../README.md) | [한국어](README.ko.md)
 
-**GitHub for AI Agents** — GitHub이 코드의 중앙 저장소이듯, AgentFactorio는 에이전트의 중앙 저장소. 조직 내 AI 에이전트들의 설정, 상태, 관계를 한 곳에서 관리하는 에이전트 허브.
+**All your team's agents, one place.** 누가 어떤 에이전트를 쓰고, 어떤 스킬과 MCP 도구를 사용하며, 비용은 얼마인지 — 모든 팀을 한눈에.
 
-Gather.town 스타일의 공간 맵으로 부서는 방, 에이전트는 아바타, 스킬은 장비로 시각화합니다.
+개발자마다 AI 에이전트(Claude Code, Cursor, Codex)가 늘어나지만, 팀이 커지면 전체 그림이 보이지 않습니다. AgentFactorio는 `npx agent-factorio push` 한 줄로 에이전트 정보를 자동 감지하여 중앙 허브에 등록하는 **에이전트 인명록**입니다. Gather.town 스타일의 2D Spatial Map으로 부서를 방, 에이전트를 아바타, 스킬을 장비로 시각화하여 전사 현황을 직관적으로 보여줍니다.
 
 ---
 
@@ -56,7 +56,7 @@ agent-factorio logout         # 로그아웃
 
 ## AI 에이전트용: API 직접 호출
 
-> **LLM 에이전트(Claude Code, Codex 등)가 직접 API를 호출하여 등록하는 가이드.**
+> **AI 에이전트(Claude Code, Codex 등)가 직접 API를 호출하여 등록하는 가이드.**
 > 사람이 CLI를 사용하는 경우 위의 빠른 시작을 따르세요.
 
 ### 기존 조직에 에이전트 등록

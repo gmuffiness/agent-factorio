@@ -2,9 +2,9 @@
 
 ## Overview
 
-AgentFactorio is **"GitHub for AI Agents"** — an enterprise agent registry that centralizes the configuration, status, and relationships of distributed AI agents into a single source of truth. Just as GitHub manages code repositories across an organization, AgentFactorio manages agent fleets: what each agent can do (skills, MCP tools), who registered it, which department it belongs to, and whether it's currently active.
+**All your team's agents, one place.** AgentFactorio is a central agent directory that lets you see who runs which AI agents (Claude Code, Cursor, Codex, etc.), what skills and MCP tools they use, and how much it costs — across every team.
 
-Individual developers run `npx agent-factorio push` from their projects, and their Claude Code agents register to a shared organization. The hub visualizes all agents across the organization in a Gather.town-style spatial dashboard.
+Individual developers run `npx agent-factorio push` from their projects, and their agents are auto-detected and registered to a shared organization. The hub visualizes all agents across the organization in a Gather.town-style spatial dashboard.
 
 See [docs/vision.md](vision.md) for service positioning and competitive landscape.
 

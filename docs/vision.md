@@ -2,9 +2,9 @@
 
 ## One-liner
 
-**AgentFactorio — GitHub for AI Agents.**
+**All your team's agents, one place.**
 
-GitHub이 코드의 중앙 저장소이듯, AgentFactorio는 에이전트의 중앙 저장소.
+개발자마다 AI 에이전트(Claude Code, Cursor, Codex)가 늘어나는데, 팀이 커지면 전체 그림이 보이지 않습니다. AgentFactorio는 이 문제를 해결하는 에이전트 인명록입니다.
 
 ## 문제
 
@@ -51,7 +51,7 @@ AI 에이전트가 팀 곳곳에 퍼져 있다. 각 개발자가 자기 프로�
 | **GitHub** | 코드 저장소 | 개발자 | 퍼블릭 |
 | **AgentFactorio** | 에이전트 저장소 (기업용) | 조직/팀 | 프라이빗 |
 
-## GitHub 비유가 성립하는 이유
+## 에이전트 인명록 비유가 성립하는 이유
 
 | GitHub | AgentFactorio |
 |---|---|
