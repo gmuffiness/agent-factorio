@@ -46,9 +46,6 @@ export default function QuickstartTabs() {
       <div className="p-6 sm:p-8">
         {active === "One-liner" && (
           <div className="space-y-4">
-            <p className="text-sm text-slate-400">
-              Works everywhere. Installs everything. You&apos;re welcome.
-            </p>
             <CodeBlock>{`curl -fsSL https://agent-factorio.vercel.app/install.sh | bash`}</CodeBlock>
             <p className="text-xs text-slate-500">
               Works on macOS &amp; Linux. Installs Node.js (if needed) and agent-factorio CLI, then starts login.
