@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/db/supabase";
 import { requireOrgMember } from "@/lib/auth";
 import { fetchRepoContext, formatRepoContextPrompt, getTokenForRepo } from "@/lib/repo-context";
+import { decrypt } from "@/lib/crypto";
+import { validateGatewayUrl } from "@/lib/url-validation";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 
@@ -95,10 +98,11 @@ async function fetchAgentContext(supabase: ReturnType<typeof getSupabase>, agent
 async function streamAnthropicResponse(
   agent: AgentRow,
   systemPrompt: string,
-  messages: { role: string; content: string }[]
+  messages: { role: string; content: string }[],
+  orgApiKey?: string | null,
 ) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
+  const apiKey = orgApiKey || process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("Anthropic API key not configured. Please set it in Settings → API Keys.");
 
   const client = new Anthropic({ apiKey });
   const stream = await client.messages.stream({
@@ -113,10 +117,11 @@ async function streamAnthropicResponse(
 async function streamOpenAIResponse(
   agent: AgentRow,
   systemPrompt: string,
-  messages: { role: string; content: string }[]
+  messages: { role: string; content: string }[],
+  orgApiKey?: string | null,
 ) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
+  const apiKey = orgApiKey || process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OpenAI API key not configured. Please set it in Settings → API Keys.");
 
   const client = new OpenAI({ apiKey });
   const stream = await client.chat.completions.create({
@@ -141,6 +146,9 @@ async function streamOpenClawResponse(
 ) {
   const gatewayUrl = agent.gateway_url;
   if (!gatewayUrl) throw new Error(`No gateway URL configured for OpenClaw agent "${agent.name}"`);
+
+  // Validate URL to prevent SSRF attacks
+  await validateGatewayUrl(gatewayUrl);
 
   // Normalize URL — strip trailing slash, append /api/message
   const baseUrl = gatewayUrl.replace(/\/+$/, "");
@@ -172,8 +180,21 @@ export async function POST(
 ) {
   const { orgId } = await params;
 
-  const memberCheck = await requireOrgMember(orgId);
-  if (memberCheck instanceof NextResponse) return memberCheck;
+  const supabase = getSupabase();
+
+  // Auth check — skip for public orgs
+  const { data: orgCheck } = await supabase.from("organizations").select("visibility, anthropic_api_key, openai_api_key").eq("id", orgId).single();
+  if (!orgCheck || orgCheck.visibility !== "public") {
+    const memberCheck = await requireOrgMember(orgId);
+    if (memberCheck instanceof NextResponse) return memberCheck;
+  }
+
+  // Rate limit: 20 req/min per IP
+  const ip = getClientIp(request);
+  const { allowed } = checkRateLimit(`chat:${ip}`, { maxRequests: 20, windowMs: 60_000 });
+  if (!allowed) {
+    return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429, headers: { "Content-Type": "application/json" } });
+  }
 
   const body = await request.json();
   const { agentId, agentIds, conversationId, message } = body;
@@ -188,7 +209,15 @@ export async function POST(
     });
   }
 
-  const supabase = getSupabase();
+  // Org-level API keys — decrypt before use (fall back to env vars in stream functions)
+  let orgAnthropicKey: string | null = null;
+  let orgOpenaiKey: string | null = null;
+  try {
+    if (orgCheck?.anthropic_api_key) orgAnthropicKey = decrypt(orgCheck.anthropic_api_key as string);
+    if (orgCheck?.openai_api_key) orgOpenaiKey = decrypt(orgCheck.openai_api_key as string);
+  } catch {
+    // Decryption failed — keys may be corrupted or ENCRYPTION_KEY changed; fall back to env vars
+  }
 
   // Fetch all agents
   const { data: agentsData, error: agentsErr } = await supabase
@@ -327,7 +356,7 @@ export async function POST(
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text, agentId: agent.id, agentName: agent.name })}\n\n`));
             }
           } else if (agent.vendor === "anthropic") {
-            const { stream } = await streamAnthropicResponse(agent, systemPrompt, chatMessages);
+            const { stream } = await streamAnthropicResponse(agent, systemPrompt, chatMessages, orgAnthropicKey);
             for await (const event of stream) {
               if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
                 const text = event.delta.text;
@@ -336,7 +365,7 @@ export async function POST(
               }
             }
           } else if (agent.vendor === "openai") {
-            const { stream } = await streamOpenAIResponse(agent, systemPrompt, chatMessages);
+            const { stream } = await streamOpenAIResponse(agent, systemPrompt, chatMessages, orgOpenaiKey);
             for await (const chunk of stream) {
               const text = chunk.choices[0]?.delta?.content;
               if (text) {

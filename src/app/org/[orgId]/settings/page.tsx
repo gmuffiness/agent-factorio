@@ -79,6 +79,13 @@ export default function SettingsPage() {
     message: string;
   } | null>(null);
 
+  // API Keys state
+  const [anthropicKey, setAnthropicKey] = useState("");
+  const [openaiKey, setOpenaiKey] = useState("");
+  const [apiKeysStatus, setApiKeysStatus] = useState<{ anthropic: boolean; openai: boolean }>({ anthropic: false, openai: false });
+  const [apiKeysSaving, setApiKeysSaving] = useState(false);
+  const [apiKeysResult, setApiKeysResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
   // Danger zone state
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -114,10 +121,20 @@ export default function SettingsPage() {
     }
   }, [orgId]);
 
+  const fetchApiKeys = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/organizations/${orgId}/api-keys`);
+      if (res.ok) {
+        setApiKeysStatus(await res.json());
+      }
+    } catch { /* ignore */ }
+  }, [orgId]);
+
   useEffect(() => {
     fetchData();
     fetchGitHub();
-  }, [fetchData, fetchGitHub]);
+    fetchApiKeys();
+  }, [fetchData, fetchGitHub, fetchApiKeys]);
 
   const handleDisconnectGitHub = async (id: string) => {
     if (!confirm("Disconnect this GitHub account? You can reconnect later.")) return;
@@ -239,6 +256,55 @@ export default function SettingsPage() {
     }
 
     setOrgSaving(false);
+  };
+
+  const handleSaveApiKeys = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setApiKeysSaving(true);
+    setApiKeysResult(null);
+
+    const payload: Record<string, string | null> = {};
+    if (anthropicKey) payload.anthropicApiKey = anthropicKey;
+    if (openaiKey) payload.openaiApiKey = openaiKey;
+
+    if (Object.keys(payload).length === 0) {
+      setApiKeysResult({ type: "error", message: "Enter at least one API key." });
+      setApiKeysSaving(false);
+      return;
+    }
+
+    const res = await fetch(`/api/organizations/${orgId}/api-keys`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      setApiKeysResult({ type: "error", message: err.error ?? "Failed to save" });
+    } else {
+      setApiKeysResult({ type: "success", message: "API keys saved." });
+      setAnthropicKey("");
+      setOpenaiKey("");
+      fetchApiKeys();
+    }
+    setApiKeysSaving(false);
+  };
+
+  const handleClearApiKey = async (vendor: "anthropic" | "openai") => {
+    const payload = vendor === "anthropic"
+      ? { anthropicApiKey: null }
+      : { openaiApiKey: null };
+
+    const res = await fetch(`/api/organizations/${orgId}/api-keys`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      fetchApiKeys();
+    }
   };
 
   const handleDeleteOrg = async () => {
@@ -419,6 +485,71 @@ export default function SettingsPage() {
                   )}
                 >
                   {orgSaveResult.message}
+                </p>
+              )}
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* API Keys Card */}
+      {isAdmin && (
+        <div className="mb-8 rounded-lg border border-slate-700 bg-slate-800/50 p-6">
+          <h2 className="mb-1 text-lg font-semibold text-white">API Keys</h2>
+          <p className="mb-4 text-sm text-slate-400">
+            Set vendor API keys for this organization. These keys are used for the Chat feature. Keys are stored securely and never exposed to the client.
+          </p>
+
+          {/* Current status */}
+          <div className="mb-4 flex gap-4">
+            <div className="flex items-center gap-2">
+              <span className={cn("h-2 w-2 rounded-full", apiKeysStatus.anthropic ? "bg-green-400" : "bg-slate-600")} />
+              <span className="text-sm text-slate-300">Anthropic</span>
+              {apiKeysStatus.anthropic && (
+                <button onClick={() => handleClearApiKey("anthropic")} className="text-xs text-red-400 hover:text-red-300">Clear</button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={cn("h-2 w-2 rounded-full", apiKeysStatus.openai ? "bg-green-400" : "bg-slate-600")} />
+              <span className="text-sm text-slate-300">OpenAI</span>
+              {apiKeysStatus.openai && (
+                <button onClick={() => handleClearApiKey("openai")} className="text-xs text-red-400 hover:text-red-300">Clear</button>
+              )}
+            </div>
+          </div>
+
+          <form onSubmit={handleSaveApiKeys} className="space-y-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-400">Anthropic API Key</label>
+              <input
+                type="password"
+                value={anthropicKey}
+                onChange={(e) => setAnthropicKey(e.target.value)}
+                placeholder={apiKeysStatus.anthropic ? "••••••••••••••• (already set)" : "sk-ant-..."}
+                className="w-96 rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-400">OpenAI API Key</label>
+              <input
+                type="password"
+                value={openaiKey}
+                onChange={(e) => setOpenaiKey(e.target.value)}
+                placeholder={apiKeysStatus.openai ? "••••••••••••••• (already set)" : "sk-..."}
+                className="w-96 rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={apiKeysSaving || (!anthropicKey && !openaiKey)}
+                className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+              >
+                {apiKeysSaving ? "Saving..." : "Save API Keys"}
+              </button>
+              {apiKeysResult && (
+                <p className={cn("text-sm", apiKeysResult.type === "success" ? "text-green-400" : "text-red-400")}>
+                  {apiKeysResult.message}
                 </p>
               )}
             </div>
