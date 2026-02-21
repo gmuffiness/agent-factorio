@@ -28,10 +28,20 @@ export async function GET(
   { params }: { params: Promise<{ orgId: string }> },
 ) {
   const { orgId } = await params;
-  const auth = await requireOrgMember(orgId);
-  if (auth instanceof NextResponse) return auth;
-
   const supabase = getSupabase();
+
+  // Check org visibility — skip auth for public orgs
+  const { data: orgCheck } = await supabase.from("organizations").select("visibility").eq("id", orgId).single();
+  let authRole: string | null = null;
+  let authUserId: string | null = null;
+
+  if (!orgCheck || orgCheck.visibility !== "public") {
+    const auth = await requireOrgMember(orgId);
+    if (auth instanceof NextResponse) return auth;
+    authRole = auth.role;
+    authUserId = auth.user.id;
+  }
+
   const memberId = request.nextUrl.searchParams.get("memberId");
 
   let query = supabase
@@ -40,13 +50,13 @@ export async function GET(
     .eq("org_id", orgId)
     .order("created_at", { ascending: false });
 
-  // Non-admin users can only see their own subscriptions
-  if (auth.role !== "admin" && !memberId) {
+  // Non-admin users can only see their own subscriptions (public orgs show all)
+  if (authRole && authRole !== "admin" && !memberId) {
     const { data: member } = await supabase
       .from("org_members")
       .select("id")
       .eq("org_id", orgId)
-      .eq("user_id", auth.user.id)
+      .eq("user_id", authUserId!)
       .maybeSingle();
     if (member) {
       query = query.eq("member_id", member.id);

@@ -278,8 +278,8 @@ export default function HumansPage() {
     const allSubs: MemberSubscription[] = subsRes.ok ? await subsRes.json() : [];
 
     const rows: MemberRow[] = ((membersData.members ?? []) as { id: string; name: string; email: string | null; role: string; avatar_url?: string; avatarUrl?: string; joined_at?: string; joinedAt?: string }[]).map((m) => {
-      const agentCount = (agentsData as { human_id?: string | null; humanId?: string | null }[]).filter(
-        (a) => (a.human_id ?? a.humanId) === m.id
+      const agentCount = (agentsData as { human_id?: string | null; humanId?: string | null; registered_by?: string | null; registeredBy?: string | null }[]).filter(
+        (a) => (a.human_id ?? a.humanId) === m.id || (a.registered_by ?? a.registeredBy) === m.id
       ).length;
       const subs = allSubs.filter((s) => s.memberId === m.id);
       const totalCost = subs.filter((s) => s.isActive).reduce((sum, s) => sum + s.monthlyAmount, 0);
