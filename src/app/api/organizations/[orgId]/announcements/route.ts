@@ -12,8 +12,12 @@ export async function GET(
 ) {
   const { orgId } = await params;
 
-  const memberCheck = await requireOrgMember(orgId);
-  if (memberCheck instanceof NextResponse) return memberCheck;
+  const supabaseCheck = getSupabase();
+  const { data: orgCheck } = await supabaseCheck.from("organizations").select("visibility").eq("id", orgId).single();
+  if (!orgCheck || orgCheck.visibility !== "public") {
+    const memberCheck = await requireOrgMember(orgId);
+    if (memberCheck instanceof NextResponse) return memberCheck;
+  }
 
   const supabase = getSupabase();
 

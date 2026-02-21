@@ -321,8 +321,12 @@ async function loadOrganization(orgId: string): Promise<Organization | null> {
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
-  const memberCheck = await requireOrgMember(orgId);
-  if (memberCheck instanceof NextResponse) return memberCheck;
+  const supabaseCheck = getSupabase();
+  const { data: orgCheck } = await supabaseCheck.from("organizations").select("visibility").eq("id", orgId).single();
+  if (!orgCheck || orgCheck.visibility !== "public") {
+    const memberCheck = await requireOrgMember(orgId);
+    if (memberCheck instanceof NextResponse) return memberCheck;
+  }
 
   const org = await loadOrganization(orgId);
   if (!org) {

@@ -135,18 +135,19 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   fetchOrganization: async (orgId: string, force?: boolean) => {
     const state = get();
+    const isSameOrg = state.organization.id === orgId;
     const STALE_MS = 30_000; // 30 seconds
     if (
       !force &&
       state.isLoaded &&
-      state.currentOrgId === orgId &&
+      isSameOrg &&
       Date.now() - state.lastFetchedAt < STALE_MS
     ) {
       return; // already fresh
     }
-    // Clear stale data immediately when switching orgs
-    if (state.currentOrgId !== orgId) {
-      set({ isLoaded: false, currentOrgId: orgId });
+    // Clear stale data and selections immediately when switching orgs
+    if (!isSameOrg) {
+      set({ isLoaded: false, currentOrgId: orgId, selectedDepartmentId: null, selectedAgentId: null });
     }
     try {
       const res = await fetch(`/api/organizations/${orgId}`);

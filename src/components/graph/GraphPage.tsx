@@ -52,11 +52,14 @@ export function GraphPage() {
   useEffect(() => {
     if (!currentOrgId) return;
     fetch(`/api/organizations/${currentOrgId}/graph`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) return { nodes: [], edges: [] };
+        return res.json();
+      })
       .then((data: { nodes: Node[]; edges: Edge[] }) => {
-        setNodes(data.nodes);
+        setNodes(data.nodes ?? []);
         setEdges(
-          data.edges.map((e: Edge) => ({
+          (data.edges ?? []).map((e: Edge) => ({
             ...e,
             style: edgeStyles[(e.data as { relationship: string })?.relationship] ?? {},
             animated: false,
