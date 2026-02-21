@@ -20,26 +20,23 @@ export default function QuickstartTabs() {
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/50 overflow-hidden">
-      {/* Tab bar */}
-      <div className="flex items-center gap-0 border-b border-slate-800 bg-slate-900/80 px-4">
-        <div className="flex items-center gap-1.5 mr-4 py-3">
-          <span className="h-3 w-3 rounded-full bg-red-500/80" />
-          <span className="h-3 w-3 rounded-full bg-yellow-500/80" />
-          <span className="h-3 w-3 rounded-full bg-green-500/80" />
+      {/* Pill toggle */}
+      <div className="flex items-center justify-center pt-6 pb-2">
+        <div className="inline-flex rounded-full border border-slate-700 bg-slate-900 p-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActive(tab)}
+              className={`rounded-full px-5 py-1.5 text-sm font-medium transition-all ${
+                active === tab
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActive(tab)}
-            className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              active === tab
-                ? "border-emerald-400 text-emerald-400"
-                : "border-transparent text-slate-500 hover:text-slate-300"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
       </div>
 
       {/* Tab content */}
