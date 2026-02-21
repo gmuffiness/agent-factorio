@@ -1,8 +1,7 @@
-"use client";
-
-import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { getSupabaseBrowser } from "@/db/supabase-browser";
+import { getSupabase } from "@/db/supabase";
+import AuthNav from "./_components/AuthNav";
+import CopyButton from "./_components/CopyButton";
 
 interface PublicOrg {
   id: string;
@@ -13,25 +12,7 @@ interface PublicOrg {
   skillCount: number;
   mcpToolCount: number;
   vendors: string[];
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [text]);
-
-  return (
-    <button
-      onClick={handleCopy}
-      className="absolute right-3 top-3 rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-300"
-    >
-      {copied ? "Copied!" : "Copy"}
-    </button>
-  );
+  forkCount: number;
 }
 
 function CodeBlock({ children }: { children: string }) {
@@ -43,24 +24,112 @@ function CodeBlock({ children }: { children: string }) {
   );
 }
 
-export default function HomePage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [publicOrgs, setPublicOrgs] = useState<PublicOrg[]>([]);
+async function fetchPublicOrgs(): Promise<PublicOrg[]> {
+  const supabase = getSupabase();
 
-  useEffect(() => {
-    getSupabaseBrowser().auth.getUser().then(({ data: { user } }) => {
-      setIsLoggedIn(!!user);
-    });
+  const { data: orgs, error } = await supabase
+    .from("organizations")
+    .select("id, name, description, visibility")
+    .eq("visibility", "public");
 
-    fetch("/api/public/organizations")
-      .then((res) => res.json())
-      .then((data: PublicOrg[]) => {
-        if (Array.isArray(data)) setPublicOrgs(data);
-      })
-      .catch(() => {});
-  }, []);
+  if (error || !orgs || orgs.length === 0) return [];
 
-  const authHref = isLoggedIn ? "/dashboard" : "/login";
+  const orgIds = orgs.map((o) => o.id);
+
+  const { data: deptRows } = await supabase
+    .from("departments")
+    .select("id, org_id")
+    .in("org_id", orgIds);
+
+  const deptToOrg = new Map<string, string>();
+  const deptsByOrg = new Map<string, number>();
+  for (const dept of deptRows ?? []) {
+    deptToOrg.set(dept.id, dept.org_id);
+    deptsByOrg.set(dept.org_id, (deptsByOrg.get(dept.org_id) ?? 0) + 1);
+  }
+
+  const deptIds = (deptRows ?? []).map((d) => d.id);
+  if (deptIds.length === 0) {
+    return orgs.map((org) => ({
+      id: org.id,
+      name: org.name,
+      description: org.description ?? "",
+      departmentCount: 0,
+      agentCount: 0,
+      skillCount: 0,
+      mcpToolCount: 0,
+      vendors: [],
+      forkCount: 0,
+    }));
+  }
+
+  const { data: agentRows } = await supabase
+    .from("agents")
+    .select("id, dept_id, vendor")
+    .in("dept_id", deptIds);
+
+  const agentToOrg = new Map<string, string>();
+  const agentsByOrg = new Map<string, number>();
+  const vendorsByOrg = new Map<string, Set<string>>();
+  for (const agent of agentRows ?? []) {
+    const orgId = deptToOrg.get(agent.dept_id);
+    if (!orgId) continue;
+    agentToOrg.set(agent.id, orgId);
+    agentsByOrg.set(orgId, (agentsByOrg.get(orgId) ?? 0) + 1);
+    if (!vendorsByOrg.has(orgId)) vendorsByOrg.set(orgId, new Set());
+    vendorsByOrg.get(orgId)!.add(agent.vendor);
+  }
+
+  const agentIds = (agentRows ?? []).map((a) => a.id);
+  const agentIdFilter = agentIds.length > 0 ? agentIds : ["__none__"];
+
+  const [{ data: skillRows }, { data: mcpRows }] = await Promise.all([
+    supabase.from("agent_skills").select("agent_id, skill_id").in("agent_id", agentIdFilter),
+    supabase.from("mcp_tools").select("agent_id, name").in("agent_id", agentIdFilter),
+  ]);
+
+  const skillCountByOrg = new Map<string, Set<string>>();
+  for (const row of skillRows ?? []) {
+    const orgId = agentToOrg.get(row.agent_id);
+    if (!orgId) continue;
+    if (!skillCountByOrg.has(orgId)) skillCountByOrg.set(orgId, new Set());
+    skillCountByOrg.get(orgId)!.add(row.skill_id);
+  }
+
+  const mcpCountByOrg = new Map<string, Set<string>>();
+  for (const row of mcpRows ?? []) {
+    const orgId = agentToOrg.get(row.agent_id);
+    if (!orgId) continue;
+    if (!mcpCountByOrg.has(orgId)) mcpCountByOrg.set(orgId, new Set());
+    mcpCountByOrg.get(orgId)!.add(row.name);
+  }
+
+  const { data: forkRows } = await supabase
+    .from("organizations")
+    .select("forked_from")
+    .in("forked_from", orgIds);
+
+  const forkCountByOrg = new Map<string, number>();
+  for (const row of forkRows ?? []) {
+    if (!row.forked_from) continue;
+    forkCountByOrg.set(row.forked_from, (forkCountByOrg.get(row.forked_from) ?? 0) + 1);
+  }
+
+  return orgs.map((org) => ({
+    id: org.id,
+    name: org.name,
+    description: org.description ?? "",
+    departmentCount: deptsByOrg.get(org.id) ?? 0,
+    agentCount: agentsByOrg.get(org.id) ?? 0,
+    skillCount: skillCountByOrg.get(org.id)?.size ?? 0,
+    mcpToolCount: mcpCountByOrg.get(org.id)?.size ?? 0,
+    vendors: Array.from(vendorsByOrg.get(org.id) ?? []),
+    forkCount: forkCountByOrg.get(org.id) ?? 0,
+  }));
+}
+
+export default async function HomePage() {
+  const publicOrgs = await fetchPublicOrgs();
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -68,33 +137,17 @@ export default function HomePage() {
       <nav className="fixed top-0 z-50 w-full border-b border-slate-800/60 bg-slate-950/80 backdrop-blur-lg">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2.5">
-            <span className="text-2xl">🏘️</span>
+            <img src="/agentfactorio_logo.png" alt="AgentFactorio" className="h-7 w-7" />
             <span className="text-lg font-bold tracking-tight">AgentFactorio</span>
           </Link>
           <div className="flex items-center gap-3">
-            {isLoggedIn ? (
-              <Link
-                href="/dashboard"
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium transition-colors hover:bg-emerald-500"
-              >
-                Dashboard
-              </Link>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="rounded-lg px-4 py-2 text-sm text-slate-300 transition-colors hover:text-white"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/login"
-                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium transition-colors hover:bg-emerald-500"
-                >
-                  Get Started
-                </Link>
-              </>
-            )}
+            <Link
+              href="/explore"
+              className="text-sm font-medium text-slate-400 transition-colors hover:text-white"
+            >
+              Explore
+            </Link>
+            <AuthNav />
           </div>
         </div>
       </nav>
@@ -193,7 +246,7 @@ export default function HomePage() {
             <p className="mb-8 text-center text-sm text-slate-400">
               Explore how teams organize their AI agent fleets
             </p>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
               {publicOrgs.map((org) => (
                 <Link
                   key={org.id}
@@ -238,12 +291,31 @@ export default function HomePage() {
                       ))}
                     </div>
                   )}
-                  <div className="mt-4 flex items-center gap-1 text-sm font-medium text-emerald-400 opacity-0 transition-opacity group-hover:opacity-100">
-                    View Organization
-                    <span aria-hidden="true">&rarr;</span>
+                  <div className="mt-4 flex items-center justify-between">
+                    {org.forkCount > 0 && (
+                      <span className="flex items-center gap-1 text-xs text-slate-500">
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5v4.5m0 0a3 3 0 103 3m-3-3h7.5M15.75 4.5v4.5m0 0a3 3 0 11-3 3" />
+                        </svg>
+                        {org.forkCount} {org.forkCount === 1 ? "fork" : "forks"}
+                      </span>
+                    )}
+                    <span className="ml-auto flex items-center gap-1 text-sm font-medium text-emerald-400 opacity-0 transition-opacity group-hover:opacity-100">
+                      View Organization
+                      <span aria-hidden="true">&rarr;</span>
+                    </span>
                   </div>
                 </Link>
               ))}
+            </div>
+            <div className="text-center">
+              <Link
+                href="/explore"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-slate-800 hover:border-slate-600"
+              >
+                Browse all organizations
+                <span aria-hidden="true">&rarr;</span>
+              </Link>
             </div>
           </div>
         </section>
@@ -253,7 +325,7 @@ export default function HomePage() {
       <footer className="border-t border-slate-800/60 py-12">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-6 text-sm text-slate-500 sm:flex-row sm:justify-between">
           <div className="flex items-center gap-2">
-            <span>🏘️</span>
+            <img src="/agentfactorio_logo.png" alt="AgentFactorio" className="h-5 w-5" />
             <span>AgentFactorio</span>
           </div>
           <div className="flex items-center gap-6">

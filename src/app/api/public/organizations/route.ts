@@ -34,14 +34,27 @@ export async function GET() {
 
   const deptIds = (deptRows ?? []).map((d) => d.id);
   if (deptIds.length === 0) {
+    const { data: forkRowsEarly } = await supabase
+      .from("organizations")
+      .select("forked_from")
+      .in("forked_from", orgIds);
+
+    const forkCountByOrgEarly = new Map<string, number>();
+    for (const row of forkRowsEarly ?? []) {
+      if (!row.forked_from) continue;
+      forkCountByOrgEarly.set(row.forked_from, (forkCountByOrgEarly.get(row.forked_from) ?? 0) + 1);
+    }
+
     const result = orgs.map((org) => ({
       id: org.id,
       name: org.name,
+      description: org.description ?? "",
       departmentCount: 0,
       agentCount: 0,
       skillCount: 0,
       mcpToolCount: 0,
       vendors: [],
+      forkCount: forkCountByOrgEarly.get(org.id) ?? 0,
     }));
     return NextResponse.json(result, {
       headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=120" },
@@ -91,6 +104,18 @@ export async function GET() {
     mcpCountByOrg.get(orgId)!.add(row.name);
   }
 
+  // Step 4: fork counts
+  const { data: forkRows } = await supabase
+    .from("organizations")
+    .select("forked_from")
+    .in("forked_from", orgIds);
+
+  const forkCountByOrg = new Map<string, number>();
+  for (const row of forkRows ?? []) {
+    if (!row.forked_from) continue;
+    forkCountByOrg.set(row.forked_from, (forkCountByOrg.get(row.forked_from) ?? 0) + 1);
+  }
+
   const result = orgs.map((org) => ({
     id: org.id,
     name: org.name,
@@ -100,6 +125,7 @@ export async function GET() {
     skillCount: skillCountByOrg.get(org.id)?.size ?? 0,
     mcpToolCount: mcpCountByOrg.get(org.id)?.size ?? 0,
     vendors: Array.from(vendorsByOrg.get(org.id) ?? []),
+    forkCount: forkCountByOrg.get(org.id) ?? 0,
   }));
 
   return NextResponse.json(result, {

@@ -70,7 +70,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-8 px-6">
         {/* Logo */}
         <div className="text-center">
-          <span className="text-4xl">🏘️</span>
+          <img src="/agentfactorio_logo.png" alt="AgentFactorio" className="h-12 w-12" />
           <h1 className="mt-3 text-2xl font-bold">AgentFactorio</h1>
           <p className="mt-2 text-sm text-slate-400">
             Sign in to manage your AI agent fleet
