@@ -90,6 +90,7 @@ export function ChatPage({ orgId }: ChatPageProps) {
   const [streamingAgent, setStreamingAgent] = useState<StreamingAgent | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [convLoading, setConvLoading] = useState(true);
   const [showNewChat, setShowNewChat] = useState(false);
   const [waitingForAgent, setWaitingForAgent] = useState<{ agentId: string; agentName: string } | null>(null);
   const [userKeys, setUserKeys] = useState<{ anthropic: string | null; openai: string | null }>({ anthropic: null, openai: null });
@@ -124,7 +125,10 @@ export function ChatPage({ orgId }: ChatPageProps) {
   // Existing conversations keep their position; new ones are prepended.
   const fetchConversations = useCallback(async () => {
     const res = await fetch(`/api/organizations/${orgId}/conversations`);
-    if (!res.ok) return;
+    if (!res.ok) {
+      setConvLoading(false);
+      return;
+    }
     const fetched: Conversation[] = await res.json();
     setConversations((prev) => {
       // Build a map of fetched convs for O(1) lookup
@@ -138,6 +142,7 @@ export function ChatPage({ orgId }: ChatPageProps) {
       const newOnes = fetched.filter((c) => !existingIds.has(c.id));
       return [...newOnes, ...updated];
     });
+    setConvLoading(false);
   }, [orgId]);
 
   // Check if API keys are configured
@@ -488,6 +493,7 @@ export function ChatPage({ orgId }: ChatPageProps) {
               setStreamingAgent(null);
             }}
             onNew={handleNewConversation}
+            loading={convLoading}
           />
         </div>
       </div>

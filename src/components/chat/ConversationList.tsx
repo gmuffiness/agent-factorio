@@ -8,6 +8,7 @@ interface ConversationListProps {
   selectedId: string | null;
   onSelect: (convId: string) => void;
   onNew: () => void;
+  loading?: boolean;
 }
 
 const vendorDotClass: Record<string, string> = {
@@ -16,7 +17,7 @@ const vendorDotClass: Record<string, string> = {
   google: "bg-blue-400",
 };
 
-export function ConversationList({ conversations, selectedId, onSelect, onNew }: ConversationListProps) {
+export function ConversationList({ conversations, selectedId, onSelect, onNew, loading }: ConversationListProps) {
   return (
     <div className="flex flex-col gap-0.5">
       {/* Header */}
@@ -109,7 +110,22 @@ export function ConversationList({ conversations, selectedId, onSelect, onNew }:
         );
       })}
 
-      {conversations.length === 0 && (
+      {loading && conversations.length === 0 && (
+        <div className="mt-4 flex flex-col items-center gap-3 px-2">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="w-full animate-pulse rounded-xl bg-slate-700/40 px-3 py-3">
+              <div className="h-3.5 w-3/4 rounded bg-slate-600/50" />
+              <div className="mt-2 flex gap-1.5">
+                <div className="h-4 w-14 rounded-full bg-slate-600/40" />
+                <div className="h-4 w-14 rounded-full bg-slate-600/40" />
+              </div>
+              <div className="mt-1.5 h-2.5 w-full rounded bg-slate-600/30" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && conversations.length === 0 && (
         <div className="mt-4 flex flex-col items-center gap-2 px-2 text-center">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-700/50">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
