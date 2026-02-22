@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { trackChatMessage } from "@/lib/analytics";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -16,6 +17,7 @@ export function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
   const handleSend = useCallback(() => {
     const trimmed = text.trim();
     if (!trimmed || disabled) return;
+    trackChatMessage();
     onSend(trimmed);
     setText("");
     if (textareaRef.current) {

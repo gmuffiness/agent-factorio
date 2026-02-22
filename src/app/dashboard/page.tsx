@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowser } from "@/db/supabase-browser";
 import type { User } from "@supabase/supabase-js";
+import { trackOrgCreate, trackOrgJoin } from "@/lib/analytics";
 
 interface OrgSummary {
   id: string;
@@ -59,6 +60,7 @@ export default function DashboardPage() {
       return;
     }
     const { id } = await res.json();
+    trackOrgCreate();
     router.push(`/org/${id}`);
   };
 
@@ -76,6 +78,7 @@ export default function DashboardPage() {
       return;
     }
     const { orgId } = await res.json();
+    trackOrgJoin();
     router.push(`/org/${orgId}`);
   };
 

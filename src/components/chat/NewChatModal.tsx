@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cn, getVendorLabel } from "@/lib/utils";
+import { trackChatCreate } from "@/lib/analytics";
 import type { Vendor } from "@/types";
 
 const vendorBadgeClass: Record<string, string> = {
@@ -71,6 +72,7 @@ export function NewChatModal({ agents, onClose, onCreate }: NewChatModalProps) {
 
   const handleCreate = () => {
     if (selectedIds.size === 0) return;
+    trackChatCreate(selectedIds.size);
     onCreate(Array.from(selectedIds), title.trim() || undefined);
   };
 

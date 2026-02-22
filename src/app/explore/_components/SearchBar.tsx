@@ -1,17 +1,21 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
+import { trackExploreSearch } from "@/lib/analytics";
 
 export default function SearchBar({ defaultValue }: { defaultValue?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const params = new URLSearchParams(searchParams.toString());
       if (e.target.value) {
         params.set("q", e.target.value);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => trackExploreSearch(e.target.value), 800);
       } else {
         params.delete("q");
       }

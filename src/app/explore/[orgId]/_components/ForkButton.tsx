@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowser } from "@/db/supabase-browser";
+import { trackOrgFork } from "@/lib/analytics";
 
 export default function ForkButton({ orgId, orgName }: { orgId: string; orgName: string }) {
   const router = useRouter();
@@ -39,6 +40,7 @@ export default function ForkButton({ orgId, orgName }: { orgId: string; orgName:
         return;
       }
 
+      trackOrgFork(orgId);
       router.push(`/org/${data.id}/overview`);
     } catch {
       setError("Network error, please try again");

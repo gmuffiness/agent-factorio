@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowser } from "@/db/supabase-browser";
+import { trackLogin } from "@/lib/analytics";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,6 +30,7 @@ export default function LoginPage() {
     setLoading(provider);
     setError("");
     const supabase = getSupabaseBrowser();
+    trackLogin(provider === "azure" ? "microsoft" : provider);
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
@@ -61,6 +63,7 @@ export default function LoginPage() {
       return;
     }
 
+    trackLogin("email");
     setMessage("Check your email for the login link!");
     setLoading(null);
   };

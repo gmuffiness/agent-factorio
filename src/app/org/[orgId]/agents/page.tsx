@@ -7,6 +7,7 @@ import { useAppStore } from "@/stores/app-store";
 import { useOrgId } from "@/hooks/useOrgId";
 import { formatCurrency } from "@/lib/utils";
 import type { Vendor, AgentStatus } from "@/types";
+import { trackAgentCreate, trackAgentEdit, trackAgentDelete } from "@/lib/analytics";
 
 interface AgentRow {
   id: string;
@@ -124,6 +125,7 @@ export default function AgentsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+    trackAgentCreate(data.vendor);
     setShowForm(false);
     fetchData();
     fetchOrganization(orgId, true);
@@ -136,6 +138,7 @@ export default function AgentsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+    trackAgentEdit();
     setEditAgent(null);
     fetchData();
     fetchOrganization(orgId, true);
@@ -144,6 +147,7 @@ export default function AgentsPage() {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Delete agent "${name}"?`)) return;
     await fetch(`/api/organizations/${orgId}/agents/${id}`, { method: "DELETE" });
+    trackAgentDelete();
     fetchData();
     fetchOrganization(orgId, true);
   };
