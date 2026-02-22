@@ -104,7 +104,7 @@ async function enrichConversations(
         title: conv.title,
         createdAt: conv.created_at,
         updatedAt: conv.updated_at,
-        lastMessage: lastMsg ? `${lastMsg.role === "user" ? "You" : "AI"}: ${lastMsg.content.slice(0, 80)}` : undefined,
+        lastMessage: lastMsg ? `${lastMsg.role === "user" ? "Guest" : "AI"}: ${lastMsg.content.slice(0, 80)}` : undefined,
         participants,
       };
     })

@@ -18,6 +18,7 @@ import EventFeed from "./EventFeed";
 import HudPanel from "./HudPanel";
 import type { Agent } from "@/types";
 import { getVendorColor } from "@/lib/utils";
+import { getSupabaseBrowser } from "@/db/supabase-browser";
 
 // Shared viewport ref for programmatic access
 let sharedViewport: Viewport | null = null;
@@ -429,6 +430,17 @@ export default function SpatialCanvas() {
   const [hoveredAgentId, setHoveredAgentId] = useState<string | null>(null);
   const dialogueOpenRef = useRef(false);
   const organization = useAppStore((s) => s.organization);
+  const [playerName, setPlayerName] = useState("Guest");
+
+  // Fetch logged-in user's display name
+  useEffect(() => {
+    getSupabaseBrowser().auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        const name = user.user_metadata?.full_name ?? user.email ?? "Guest";
+        setPlayerName(name);
+      }
+    });
+  }, []);
 
   // Recent agents persisted in localStorage (max 3, most recent first)
   const recentKey = `agent-factorio-recent-agents-${organization.id}`;
@@ -788,7 +800,7 @@ export default function SpatialCanvas() {
       // === Create Player Character ===
       const sheetTexture = getSpriteSheetTexture()!;
       const spawn = findSpawnPoint(roomColliders);
-      const player = new PlayerCharacter(spawn.x, spawn.y, sheetTexture);
+      const player = new PlayerCharacter(spawn.x, spawn.y, sheetTexture, 5, playerName);
       playerRef.current = player;
       viewport.addChild(player.container);
 
@@ -886,7 +898,7 @@ export default function SpatialCanvas() {
       appRef.current = null;
       viewportRef.current = null;
     };
-  }, [organization, mapTheme]);
+  }, [organization, mapTheme, playerName]);
 
   const handleZoomIn = useCallback(() => {
     const vp = viewportRef.current;

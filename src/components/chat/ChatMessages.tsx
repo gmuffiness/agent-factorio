@@ -9,7 +9,7 @@ const vendorBadgeClass: Record<string, string> = {
   openai: "bg-emerald-500/20 text-emerald-300",
   google: "bg-blue-500/20 text-blue-300",
 };
-import { MessageBubble } from "./MessageBubble";
+import { MessageBubble, AgentSpriteAvatar } from "./MessageBubble";
 
 interface StreamingAgent {
   agentId: string;
@@ -45,33 +45,6 @@ function BouncingDots({ color = "bg-slate-400" }: { color?: string }) {
   );
 }
 
-function StreamingAgentAvatar({ name, vendor }: { name: string; vendor?: string }) {
-  const initials = name
-    .split(/[\s-_]+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-
-  const bgColor =
-    vendor === "anthropic"
-      ? "bg-orange-500/20 text-orange-300 ring-orange-500/30"
-      : vendor === "openai"
-      ? "bg-emerald-500/20 text-emerald-300 ring-emerald-500/30"
-      : vendor === "google"
-      ? "bg-blue-500/20 text-blue-300 ring-blue-500/30"
-      : "bg-slate-600/40 text-slate-300 ring-slate-500/30";
-
-  return (
-    <div
-      className={cn(
-        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-1 text-[11px] font-bold",
-        bgColor
-      )}
-    >
-      {initials || "A"}
-    </div>
-  );
-}
 
 export function ChatMessages({ messages, streamingText, streamingAgent, waitingForAgent }: ChatMessagesProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -103,7 +76,7 @@ export function ChatMessages({ messages, streamingText, streamingAgent, waitingF
         {/* Thinking indicator — cloud agent analyzing */}
         {streamingAgent && !streamingAgent.text && streamingAgent.runtimeType === "cloud" && (
           <div className="flex justify-start gap-2.5">
-            <StreamingAgentAvatar name={streamingAgent.agentName} vendor={streamingAgent.agentVendor} />
+            <AgentSpriteAvatar name={streamingAgent.agentName} />
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2 px-1">
                 <span className="text-xs font-semibold text-slate-200">{streamingAgent.agentName}</span>
@@ -126,7 +99,7 @@ export function ChatMessages({ messages, streamingText, streamingAgent, waitingF
         {/* Active streaming text */}
         {streamingAgent && streamingAgent.text && (
           <div className="flex justify-start gap-2.5">
-            <StreamingAgentAvatar name={streamingAgent.agentName} vendor={streamingAgent.agentVendor} />
+            <AgentSpriteAvatar name={streamingAgent.agentName} />
             <div className="flex max-w-[75%] flex-col gap-1">
               <div className="flex items-center gap-2 px-1">
                 <span className="text-xs font-semibold text-slate-200">{streamingAgent.agentName}</span>
@@ -147,7 +120,7 @@ export function ChatMessages({ messages, streamingText, streamingAgent, waitingF
         {/* Waiting for async agent (polling relay) */}
         {waitingForAgent && !streamingAgent && (
           <div className="flex justify-start gap-2.5">
-            <StreamingAgentAvatar name={waitingForAgent.agentName} vendor={undefined} />
+            <AgentSpriteAvatar name={waitingForAgent.agentName} />
             <div className="flex flex-col gap-1">
               <span className="px-1 text-xs font-semibold text-slate-200">{waitingForAgent.agentName}</span>
               <div className="rounded-2xl rounded-tl-sm bg-slate-700/70 px-4 py-3 ring-1 ring-slate-600/30">

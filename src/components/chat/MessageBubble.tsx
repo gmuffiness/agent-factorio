@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useEffect } from "react";
 import { cn, getVendorLabel } from "@/lib/utils";
 import type { Message, Vendor } from "@/types";
 
@@ -31,31 +32,52 @@ function renderMarkdownLike(text: string) {
   });
 }
 
-function AgentAvatar({ name, vendor }: { name: string; vendor?: string }) {
-  const initials = name
-    .split(/[\s-_]+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
+/** Sprite sheet constants — must match spatial/AgentAvatar.ts */
+const SPRITE_SIZE = 32;
+const CHARS_PER_ROW = 4;
+const FRAMES_PER_CHAR = 3;
+const TOTAL_ROWS = 21;
+const CHARACTER_POOL = Array.from({ length: TOTAL_ROWS - 1 }, (_, i) => (i + 1) * CHARS_PER_ROW);
 
-  const bgColor =
-    vendor === "anthropic"
-      ? "bg-orange-500/20 text-orange-300 ring-orange-500/30"
-      : vendor === "openai"
-      ? "bg-emerald-500/20 text-emerald-300 ring-emerald-500/30"
-      : vendor === "google"
-      ? "bg-blue-500/20 text-blue-300 ring-blue-500/30"
-      : "bg-slate-600/40 text-slate-300 ring-slate-500/30";
+function nameHash(name: string): number {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = ((h << 5) - h + name.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+export function AgentSpriteAvatar({ name }: { name: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const img = new Image();
+    img.src = "/assets/characters.png";
+    img.onload = () => {
+      const hash = nameHash(name);
+      const charIndex = CHARACTER_POOL[hash % CHARACTER_POOL.length];
+      const charCol = charIndex % CHARS_PER_ROW;
+      const charRow = Math.floor(charIndex / CHARS_PER_ROW);
+      const srcX = charCol * FRAMES_PER_CHAR * SPRITE_SIZE;
+      const srcY = charRow * SPRITE_SIZE;
+
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, srcX, srcY, SPRITE_SIZE, SPRITE_SIZE, 0, 0, canvas.width, canvas.height);
+    };
+  }, [name]);
 
   return (
-    <div
-      className={cn(
-        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-1 text-[11px] font-bold",
-        bgColor
-      )}
-    >
-      {initials || "A"}
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={32}
+      height={32}
+      className="h-8 w-8 shrink-0 rounded-full"
+      style={{ imageRendering: "pixelated" }}
+    />
   );
 }
 
@@ -76,7 +98,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           <span className="px-1 text-[10px] text-slate-500">{time}</span>
         </div>
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-600/40 ring-1 ring-slate-500/30 text-[11px] font-bold text-slate-300">
-          You
+          G
         </div>
       </div>
     );
@@ -84,7 +106,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
   return (
     <div className="flex justify-start gap-2.5">
-      <AgentAvatar name={message.agentName ?? "Agent"} vendor={message.agentVendor ?? undefined} />
+      <AgentSpriteAvatar name={message.agentName ?? "Agent"} />
       <div className="flex max-w-[75%] flex-col gap-1">
         {message.agentName && (
           <div className="flex items-center gap-2 px-1">

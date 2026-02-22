@@ -79,6 +79,7 @@ export class PlayerCharacter {
     spawnY: number,
     sheetTexture: Texture,
     charRow: number = 5, // default player character row
+    displayName: string = "Guest",
   ) {
     this.x = spawnX;
     this.y = spawnY;
@@ -135,7 +136,7 @@ export class PlayerCharacter {
     this.container.addChild(arrow);
 
     // Nameplate
-    this.nameplate = this.createNameplate("You");
+    this.nameplate = this.createNameplate(displayName);
     this.container.addChild(this.nameplate);
 
     // Interaction prompt (hidden by default)
@@ -150,7 +151,8 @@ export class PlayerCharacter {
 
   private createNameplate(name: string): Container {
     const c = new Container();
-    const w = 36;
+    const shortName = name.length > 10 ? name.slice(0, 9) + "\u2026" : name;
+    const w = Math.max(shortName.length * 6.5 + 14, 48);
     const bg = new Graphics();
     bg.roundRect(-w / 2, 24, w, 14, 3);
     bg.fill({ color: 0x1e40af, alpha: 0.85 });
@@ -159,7 +161,7 @@ export class PlayerCharacter {
     c.addChild(bg);
 
     const label = new Text({
-      text: name,
+      text: shortName,
       style: {
         fontFamily: '"Press Start 2P", monospace',
         fontSize: 6,
