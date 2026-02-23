@@ -2,6 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 const OLD_ROUTES = ["/agents", "/departments", "/graph", "/cost", "/skills"];
+
+/** Lightweight visibility check via Supabase REST API (Edge-compatible) */
+async function checkOrgIsPublic(orgId: string): Promise<boolean> {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) return false;
+    const res = await fetch(
+      `${url}/rest/v1/organizations?id=eq.${encodeURIComponent(orgId)}&select=visibility`,
+      {
+        headers: { apikey: key, Authorization: `Bearer ${key}` },
+      },
+    );
+    if (!res.ok) return false;
+    const rows = await res.json();
+    return rows.length > 0 && rows[0].visibility === "public";
+  } catch {
+    return false;
+  }
+}
 const PUBLIC_ROUTES = ["/login", "/auth/callback", "/cli/", "/", "/explore"];
 const PUBLIC_API_ROUTES = ["/api/register", "/api/cli/", "/api/public/", "/api/fork-organization"];
 
@@ -9,12 +29,11 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip auth for public routes (exact match for "/" to avoid matching everything)
-  // Also skip for /org/ and /api/organizations/ — API handlers check visibility themselves
+  // Also skip for /api/organizations/ — API handlers check visibility themselves
   if (
     pathname === "/" ||
     PUBLIC_ROUTES.filter((r) => r !== "/").some((r) => pathname.startsWith(r)) ||
     PUBLIC_API_ROUTES.some((r) => pathname.startsWith(r)) ||
-    pathname.startsWith("/org/") ||
     pathname.startsWith("/api/organizations/")
   ) {
     return NextResponse.next();
@@ -53,9 +72,29 @@ export async function middleware(request: NextRequest) {
   // Refresh session — MUST use getUser() for server-side validation
   const { data: { user } } = await supabase.auth.getUser();
 
+  // For /org/ routes: allow public orgs without auth, redirect private orgs to login
+  if (pathname.startsWith("/org/")) {
+    if (user) {
+      return response;
+    }
+    // Extract orgId from /org/[orgId]/...
+    const orgId = pathname.split("/")[2];
+    if (orgId) {
+      const isPublic = await checkOrgIsPublic(orgId);
+      if (isPublic) {
+        return NextResponse.next();
+      }
+    }
+    // Private org or invalid orgId — redirect to login
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
   // Auth gate: redirect unauthenticated users to /login
   if (!user) {
     const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
