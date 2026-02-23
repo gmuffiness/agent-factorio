@@ -4,7 +4,7 @@
 import * as path from "path";
 import { ask, choose } from "../lib/prompt.mjs";
 import { getDefaultOrg, readLocalConfig, writeLocalConfig, findProjectRoot } from "../lib/config.mjs";
-import { apiCall } from "../lib/api.mjs";
+import { authApiCall } from "../lib/api.mjs";
 import { detectAll } from "../lib/detect.mjs";
 import { success, error, info, label, heading } from "../lib/log.mjs";
 
@@ -95,7 +95,7 @@ export async function pushCommand() {
   console.log();
   info(`Pushing to "${org.orgName}" at ${org.hubUrl}...`);
 
-  const res = await apiCall(org.hubUrl, "/api/cli/push", { body });
+  const res = await authApiCall("/api/cli/push", { body });
 
   if (!res.ok) {
     error(`Failed to push: ${res.data?.error || "Unknown error"}`);
