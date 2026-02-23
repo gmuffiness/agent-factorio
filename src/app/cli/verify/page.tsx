@@ -60,7 +60,10 @@ export default function CliVerifyPage() {
       // Mark the CLI login session as verified
       const res = await fetch("/api/cli/verify", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+        },
         body: JSON.stringify({ loginToken, userId }),
       });
 
