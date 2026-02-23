@@ -39,8 +39,13 @@ export async function pushCommand() {
   console.log();
 
   // 3. Agent name, vendor, model
-  const defaultName = localConfig?.agentName || path.basename(projectRoot);
-  const agentName = await ask("Agent name", defaultName);
+  let agentName;
+  if (localConfig?.agentName) {
+    agentName = localConfig.agentName;
+    label("Agent", `${agentName} (saved)`);
+  } else {
+    agentName = await ask("Agent name", path.basename(projectRoot));
+  }
 
   const vendorOptions = ["anthropic", "openai", "google"];
   let vendor;
