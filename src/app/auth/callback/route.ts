@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { getSupabase } from "@/db/supabase";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -32,6 +33,17 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
     return NextResponse.redirect(`${origin}/login`);
+  }
+
+  // Save SSO profile image (e.g. Google avatar) to org_members
+  const { data: { user } } = await supabase.auth.getUser();
+  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
+  if (user && avatarUrl) {
+    const db = getSupabase();
+    await db
+      .from("org_members")
+      .update({ avatar_url: avatarUrl })
+      .eq("user_id", user.id);
   }
 
   return response;
