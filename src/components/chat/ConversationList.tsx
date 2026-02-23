@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { AgentSpriteAvatar } from "./MessageBubble";
 import type { Conversation, Vendor } from "@/types";
 
 interface ConversationListProps {
@@ -56,56 +57,81 @@ export function ConversationList({ conversations, selectedId, onSelect, onNew, l
             key={conv.id}
             onClick={() => onSelect(conv.id)}
             className={cn(
-              "group flex flex-col gap-1 rounded-xl px-3 py-2.5 text-left transition-all",
+              "group flex items-start gap-2.5 rounded-xl px-3 py-2.5 text-left transition-all",
               isSelected
                 ? "bg-slate-700/80 shadow-sm ring-1 ring-slate-600/50"
                 : "hover:bg-slate-700/40"
             )}
           >
-            {/* Title + timestamp */}
-            <div className="flex items-start justify-between gap-2">
-              <p className={cn(
-                "truncate text-sm font-medium leading-snug",
-                isSelected ? "text-white" : "text-slate-200 group-hover:text-white"
-              )}>
-                {conv.title}
-              </p>
-              <span className={cn(
-                "shrink-0 text-[10px] tabular-nums",
-                isSelected ? "text-slate-400" : "text-slate-500"
-              )}>
-                {timeStr}
-              </span>
+            {/* Agent avatar(s) */}
+            <div className="relative shrink-0 mt-0.5">
+              {displayParticipants.length === 1 ? (
+                <AgentSpriteAvatar name={displayParticipants[0].agentName ?? "Agent"} />
+              ) : displayParticipants.length > 1 ? (
+                <div className="relative h-8 w-8">
+                  <div className="absolute top-0 left-0 scale-75 origin-top-left">
+                    <AgentSpriteAvatar name={displayParticipants[0].agentName ?? "Agent"} />
+                  </div>
+                  <div className="absolute bottom-0 right-0 scale-75 origin-bottom-right">
+                    <AgentSpriteAvatar name={displayParticipants[1].agentName ?? "Agent"} />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-700/60 ring-1 ring-slate-600/40">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
+              )}
             </div>
 
-            {/* Participants */}
-            {displayParticipants.length > 0 && (
-              <div className="flex items-center gap-1">
-                {displayParticipants.map((p) => (
-                  <span
-                    key={p.agentId}
-                    title={p.agentName ?? p.agentId}
-                    className="inline-flex items-center gap-1 rounded-full bg-slate-600/50 px-1.5 py-0.5 text-[10px] font-medium text-slate-300"
-                  >
-                    <span className={cn("h-1.5 w-1.5 rounded-full", vendorDotClass[p.agentVendor as string] ?? "bg-slate-500")} />
-                    {p.agentName ?? "Agent"}
-                  </span>
-                ))}
-                {extraCount > 0 && (
-                  <span className="text-[10px] text-slate-500">+{extraCount}</span>
-                )}
+            {/* Content */}
+            <div className="flex-1 min-w-0 flex flex-col gap-1">
+              {/* Title + timestamp */}
+              <div className="flex items-start justify-between gap-2">
+                <p className={cn(
+                  "truncate text-sm font-medium leading-snug",
+                  isSelected ? "text-white" : "text-slate-200 group-hover:text-white"
+                )}>
+                  {conv.title}
+                </p>
+                <span className={cn(
+                  "shrink-0 text-[10px] tabular-nums",
+                  isSelected ? "text-slate-400" : "text-slate-500"
+                )}>
+                  {timeStr}
+                </span>
               </div>
-            )}
 
-            {/* Last message preview */}
-            {conv.lastMessage && (
-              <p className={cn(
-                "truncate text-[11px] leading-snug",
-                isSelected ? "text-slate-400" : "text-slate-500"
-              )}>
-                {conv.lastMessage}
-              </p>
-            )}
+              {/* Participants */}
+              {displayParticipants.length > 0 && (
+                <div className="flex items-center gap-1">
+                  {displayParticipants.map((p) => (
+                    <span
+                      key={p.agentId}
+                      title={p.agentName ?? p.agentId}
+                      className="inline-flex items-center gap-1 rounded-full bg-slate-600/50 px-1.5 py-0.5 text-[10px] font-medium text-slate-300"
+                    >
+                      <span className={cn("h-1.5 w-1.5 rounded-full", vendorDotClass[p.agentVendor as string] ?? "bg-slate-500")} />
+                      {p.agentName ?? "Agent"}
+                    </span>
+                  ))}
+                  {extraCount > 0 && (
+                    <span className="text-[10px] text-slate-500">+{extraCount}</span>
+                  )}
+                </div>
+              )}
+
+              {/* Last message preview */}
+              {conv.lastMessage && (
+                <p className={cn(
+                  "truncate text-[11px] leading-snug",
+                  isSelected ? "text-slate-400" : "text-slate-500"
+                )}>
+                  {conv.lastMessage}
+                </p>
+              )}
+            </div>
           </button>
         );
       })}

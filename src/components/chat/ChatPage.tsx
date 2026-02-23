@@ -62,6 +62,7 @@ interface StreamingAgent {
 
 interface ChatPageProps {
   orgId: string;
+  initialAgentId?: string;
 }
 
 const STORAGE_KEYS = { anthropic: "af_user_anthropic_key", openai: "af_user_openai_key" } as const;
@@ -82,7 +83,7 @@ function clearUserApiKey(vendor: "anthropic" | "openai") {
   localStorage.removeItem(STORAGE_KEYS[vendor]);
 }
 
-export function ChatPage({ orgId }: ChatPageProps) {
+export function ChatPage({ orgId, initialAgentId }: ChatPageProps) {
   const organization = useAppStore((s) => s.organization);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
@@ -133,14 +134,16 @@ export function ChatPage({ orgId }: ChatPageProps) {
     setConversations((prev) => {
       // Build a map of fetched convs for O(1) lookup
       const fetchedMap = new Map(fetched.map((c) => [c.id, c]));
+      // Preserve temp conversations (not yet persisted to DB)
+      const tempConvs = prev.filter((c) => c.id.startsWith("conv-"));
       // Update existing entries in place (preserving order), drop ones no longer returned
       const updated = prev
-        .filter((c) => fetchedMap.has(c.id))
+        .filter((c) => !c.id.startsWith("conv-") && fetchedMap.has(c.id))
         .map((c) => fetchedMap.get(c.id)!);
       // Prepend any brand-new conversations (not yet in local state)
       const existingIds = new Set(updated.map((c) => c.id));
       const newOnes = fetched.filter((c) => !existingIds.has(c.id));
-      return [...newOnes, ...updated];
+      return [...tempConvs, ...newOnes, ...updated];
     });
     setConvLoading(false);
   }, [orgId]);
@@ -237,6 +240,38 @@ export function ChatPage({ orgId }: ChatPageProps) {
       }
     }, 3000);
   }, [messages.length, orgId, fetchConversations]);
+
+  // Auto-create conversation when navigating with ?agent=<id>
+  const initialAgentHandledRef = useRef(false);
+  useEffect(() => {
+    if (!initialAgentId || initialAgentHandledRef.current || agents.length === 0) return;
+    const agent = agents.find((a) => a.id === initialAgentId);
+    if (!agent) return;
+    initialAgentHandledRef.current = true;
+
+    const now = new Date().toISOString();
+    const tempConvId = `conv-${Date.now()}`;
+    const tempConv: Conversation = {
+      id: tempConvId,
+      orgId,
+      agentId: agent.id,
+      title: agent.name,
+      createdAt: now,
+      updatedAt: now,
+      participants: [{
+        id: `cp-temp-${agent.id}`,
+        conversationId: tempConvId,
+        agentId: agent.id,
+        agentName: agent.name,
+        agentVendor: agent.vendor,
+        joinedAt: now,
+      }],
+    };
+    setConversations((prev) => [tempConv, ...prev]);
+    setSelectedConvId(tempConvId);
+    setMessages([]);
+    setStreamingAgent(null);
+  }, [initialAgentId, agents, orgId]);
 
   const handleNewConversation = () => {
     setShowNewChat(true);
@@ -649,6 +684,7 @@ export function ChatPage({ orgId }: ChatPageProps) {
               messages={messages}
               streamingAgent={streamingAgent}
               waitingForAgent={waitingForAgent}
+              participants={participants}
             />
             <ChatInput
               onSend={handleSendMessage}

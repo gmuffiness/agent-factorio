@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useAppStore } from "@/stores/app-store";
 import { formatCurrency, getVendorColor, cn } from "@/lib/utils";
 import { StatusBadge, VendorBadge } from "@/components/ui/Badge";
@@ -208,6 +209,7 @@ export function AgentDrawer() {
   const [pushSending, setPushSending] = useState(false);
   const [pushError, setPushError] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const router = useRouter();
 
   const stopPolling = useCallback(() => {
     if (pollingRef.current) {
@@ -390,6 +392,20 @@ export function AgentDrawer() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => {
+                      selectAgent(null);
+                      setActiveTab("overview");
+                      router.push(`/org/${currentOrgId}/chat?agent=${agent.id}`);
+                    }}
+                    title="Chat with this agent"
+                    className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium bg-purple-50 text-purple-600 border border-purple-100 hover:bg-purple-100 transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
+                      <path d="M4 4h12a1 1 0 011 1v8a1 1 0 01-1 1H7l-3 3V5a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Chat
+                  </button>
                   <button
                     onClick={pushStatus.status === "completed" ? () => { setPushStatus({ status: "none" }); } : handlePushRequest}
                     disabled={pushSending || pushStatus.status === "pending"}

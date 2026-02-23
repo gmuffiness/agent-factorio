@@ -115,17 +115,18 @@ export default function DialogueOverlay({ agent, orgId, onClose }: DialogueOverl
         return;
       }
 
-      // Skip typewriter on any key
+      // 1/2/3 immediately execute the action, even during typewriter
+      if (e.key === "1" || e.key === "2" || e.key === "3") {
+        e.preventDefault();
+        options[parseInt(e.key) - 1].action();
+        return;
+      }
+
+      // Skip typewriter on any other key
       if (isTyping) {
         setDisplayedText(fullText);
         setIsTyping(false);
         e.preventDefault();
-        return;
-      }
-
-      if (e.key === "1" || e.key === "2" || e.key === "3") {
-        e.preventDefault();
-        options[parseInt(e.key) - 1].action();
         return;
       }
 

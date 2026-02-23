@@ -10,7 +10,6 @@ import { PlayerCharacter, type PlayerKeys, type RoomCollider } from "./PlayerCha
 import { generateTileset, createTiledGround } from "./TilesetGenerator";
 import { createEnvironmentAnimations, type AnimatedDecoration } from "./EnvironmentAnimations";
 import { getThemePalette } from "./MapThemes";
-import MapControls from "./MapControls";
 import Minimap from "./Minimap";
 import DialogueOverlay from "./DialogueOverlay";
 import AgentStatCard from "./AgentStatCard";
@@ -900,24 +899,6 @@ export default function SpatialCanvas() {
     };
   }, [organization, mapTheme, playerName]);
 
-  const handleZoomIn = useCallback(() => {
-    const vp = viewportRef.current;
-    if (vp) vp.zoom(-100, true);
-  }, []);
-
-  const handleZoomOut = useCallback(() => {
-    const vp = viewportRef.current;
-    if (vp) vp.zoom(100, true);
-  }, []);
-
-  const handleFitAll = useCallback(() => {
-    const vp = viewportRef.current;
-    if (vp) {
-      vp.fit(true, vp.worldWidth, vp.worldHeight);
-      vp.moveCenter(vp.worldWidth / 2, vp.worldHeight / 2);
-    }
-  }, []);
-
   const getViewportBounds = useCallback(() => {
     const vp = viewportRef.current;
     if (!vp) return null;
@@ -973,12 +954,6 @@ export default function SpatialCanvas() {
           }}
         />
       )}
-
-      <MapControls
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onFitAll={handleFitAll}
-      />
 
       <Minimap
         departments={organization.departments}

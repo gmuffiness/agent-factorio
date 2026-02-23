@@ -24,11 +24,18 @@ interface WaitingForAgent {
   agentName: string;
 }
 
+interface Participant {
+  agentId: string;
+  agentName?: string;
+  agentVendor?: string;
+}
+
 interface ChatMessagesProps {
   messages: Message[];
   streamingText?: string;
   streamingAgent?: StreamingAgent | null;
   waitingForAgent?: WaitingForAgent | null;
+  participants?: Participant[];
 }
 
 function BouncingDots({ color = "bg-slate-400" }: { color?: string }) {
@@ -46,7 +53,7 @@ function BouncingDots({ color = "bg-slate-400" }: { color?: string }) {
 }
 
 
-export function ChatMessages({ messages, streamingText, streamingAgent, waitingForAgent }: ChatMessagesProps) {
+export function ChatMessages({ messages, streamingText, streamingAgent, waitingForAgent, participants }: ChatMessagesProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,14 +61,36 @@ export function ChatMessages({ messages, streamingText, streamingAgent, waitingF
   }, [messages, streamingText, streamingAgent, waitingForAgent]);
 
   if (messages.length === 0 && !streamingText && !streamingAgent) {
+    const firstAgent = participants?.[0];
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 text-slate-500">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-700/50 ring-1 ring-slate-600/40">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        </div>
-        <p className="text-sm font-medium text-slate-400">Send a message to start the conversation</p>
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 text-slate-500">
+        {firstAgent?.agentName ? (
+          <>
+            <div className="flex flex-col items-center gap-3">
+              <div className="rounded-2xl bg-slate-700/40 p-3 ring-1 ring-slate-600/30">
+                <AgentSpriteAvatar name={firstAgent.agentName} />
+              </div>
+              <div className="text-center">
+                <p className="text-base font-semibold text-slate-200">{firstAgent.agentName}</p>
+                {participants && participants.length > 1 && (
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    and {participants.length - 1} other{participants.length > 2 ? "s" : ""}
+                  </p>
+                )}
+              </div>
+            </div>
+            <p className="text-sm text-slate-400">Type a message below to start chatting</p>
+          </>
+        ) : (
+          <>
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-700/50 ring-1 ring-slate-600/40">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-slate-400">Send a message to start the conversation</p>
+          </>
+        )}
       </div>
     );
   }

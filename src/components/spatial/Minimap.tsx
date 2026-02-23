@@ -137,7 +137,7 @@ export default function Minimap({ departments, worldWidth, worldHeight, getViewp
   return (
     <div
       className="absolute right-4 z-10"
-      style={{ bottom: 220, width: MINIMAP_W, height: MINIMAP_H }}
+      style={{ bottom: 120, width: MINIMAP_W, height: MINIMAP_H }}
     >
       {/* Label */}
       <div className="bg-gray-900/90 border-2 border-b-0 border-gray-600 px-2 py-0.5 font-mono text-[9px] text-gray-400 uppercase tracking-widest select-none">
