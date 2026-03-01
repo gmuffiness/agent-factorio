@@ -10,6 +10,9 @@ on:
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version-check.outputs.local }}
+      changed: ${{ steps.version-check.outputs.changed }}
     permissions:
       contents: read
       id-token: write
@@ -114,3 +117,22 @@ jobs:
           else
             echo "### Skipped GitHub Packages — version ${{ steps.version-check.outputs.local }} already published" >> "${GITHUB_STEP_SUMMARY}"
           fi
+
+  create-release:
+    needs: [publish-npm, publish-github-packages]
+    if: needs.publish-npm.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="v${{ needs.publish-npm.outputs.version }}"
+          gh release create "$VERSION" \
+            --title "$VERSION" \
+            --generate-notes \
+            --latest
