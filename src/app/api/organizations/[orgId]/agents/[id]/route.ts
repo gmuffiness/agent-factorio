@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/db/supabase";
 import { requireOrgMember } from "@/lib/auth";
+import { computeEffectiveStatus } from "@/lib/heartbeat";
+import type { AgentStatus } from "@/types";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ orgId: string; id: string }> }) {
   const { orgId, id } = await params;
@@ -100,6 +102,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   return NextResponse.json({
     ...agent,
+    status: computeEffectiveStatus(agent.status as AgentStatus, agent.last_active),
     position: { x: agent.pos_x, y: agent.pos_y },
     humanId: agent.human_id,
     humanMember,
