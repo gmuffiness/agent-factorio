@@ -8,6 +8,62 @@ import { authApiCall } from "../lib/api.mjs";
 import { detectAll } from "../lib/detect.mjs";
 import { success, error, info, label, heading } from "../lib/log.mjs";
 
+/**
+ * Infer vendor from detected subscriptions and environment
+ * @param {{ name: string, detectionSource: string }[]} subscriptions
+ * @returns {string | null}
+ */
+function inferVendor(subscriptions) {
+  const subNames = subscriptions.map((s) => s.name);
+
+  // Claude Code or Anthropic API → anthropic
+  if (subNames.includes("Claude Code") || subNames.includes("Anthropic API")) {
+    return "anthropic";
+  }
+  // OpenAI API → openai
+  if (subNames.includes("OpenAI API")) {
+    return "openai";
+  }
+  // Cursor defaults to anthropic (most common), but could be openai
+  if (subNames.includes("Cursor")) {
+    return "anthropic";
+  }
+  // GitHub Copilot → openai
+  if (subNames.includes("GitHub Copilot")) {
+    return "openai";
+  }
+  // Windsurf → anthropic
+  if (subNames.includes("Windsurf")) {
+    return "anthropic";
+  }
+
+  return null;
+}
+
+/**
+ * Infer model from vendor and environment
+ * @param {string} vendor
+ * @returns {string}
+ */
+function inferModel(vendor) {
+  // Check environment variables
+  if (process.env.ANTHROPIC_MODEL) return process.env.ANTHROPIC_MODEL;
+  if (process.env.CLAUDE_MODEL) return process.env.CLAUDE_MODEL;
+  if (process.env.OPENAI_MODEL) return process.env.OPENAI_MODEL;
+
+  // Default to latest model per vendor
+  switch (vendor) {
+    case "anthropic":
+      return "claude-sonnet-4-6";
+    case "openai":
+      return "gpt-4o";
+    case "google":
+      return "gemini-2.0-flash";
+    default:
+      return "default";
+  }
+}
+
 export async function pushCommand() {
   // 1. Check login
   const org = getDefaultOrg();
@@ -36,40 +92,39 @@ export async function pushCommand() {
   label("Subscriptions", detected.subscriptions.length > 0
     ? `${detected.subscriptions.map((s) => s.name).join(", ")} (auto-detected)`
     : "(none)");
-  console.log();
 
-  // 3. Agent name, vendor, model
-  let agentName;
-  if (localConfig?.agentName) {
-    agentName = localConfig.agentName;
-    label("Agent", `${agentName} (saved)`);
-  } else {
-    agentName = await ask("Agent name", path.basename(projectRoot));
-  }
+  // 3. Agent name — use saved or auto-detect from directory name
+  const agentName = localConfig?.agentName || path.basename(projectRoot);
+  label("Agent", localConfig?.agentName ? `${agentName} (saved)` : `${agentName} (auto)`);
 
-  const vendorOptions = ["anthropic", "openai", "google"];
+  // 4. Vendor — auto-detect from subscriptions, fall back to saved, then prompt
   let vendor;
-  if (localConfig?.vendor && vendorOptions.includes(localConfig.vendor)) {
+  if (localConfig?.vendor) {
     vendor = localConfig.vendor;
     label("Vendor", `${vendor} (saved)`);
-  } else if (process.env.CLAUDECODE || process.env.CLAUDE_CODE_VERSION) {
-    vendor = "anthropic";
-    label("Vendor", `${vendor} (auto-detected)`);
   } else {
-    ({ value: vendor } = await choose("Vendor", vendorOptions));
+    vendor = inferVendor(detected.subscriptions);
+    if (vendor) {
+      label("Vendor", `${vendor} (auto-detected)`);
+    } else {
+      const vendorOptions = ["anthropic", "openai", "google"];
+      ({ value: vendor } = await choose("Vendor", vendorOptions));
+    }
   }
 
-  const modelOptions = getModelOptions(vendor);
+  // 5. Model — auto-detect from env/vendor, fall back to saved, then prompt
   let model;
-  const defaultModel = localConfig?.model;
-  if (defaultModel && modelOptions.includes(defaultModel)) {
-    model = defaultModel;
+  if (localConfig?.model) {
+    model = localConfig.model;
     label("Model", `${model} (saved)`);
   } else {
-    ({ value: model } = await choose("Model", modelOptions));
+    model = inferModel(vendor);
+    label("Model", `${model} (auto-detected)`);
   }
 
-  // 4. Build request body
+  console.log();
+
+  // 6. Build request body
   const body = {
     agentId: localConfig?.agentId || undefined,
     agentName,
@@ -109,8 +164,7 @@ export async function pushCommand() {
     }];
   }
 
-  // 5. Push to hub
-  console.log();
+  // 7. Push to hub
   info(`Pushing to "${org.orgName}" at ${org.hubUrl}...`);
 
   const res = await authApiCall("/api/cli/push", { body });
@@ -146,17 +200,4 @@ export async function pushCommand() {
   }
 
   console.log(`\nDashboard: ${org.hubUrl}/org/${org.orgId}`);
-}
-
-function getModelOptions(vendor) {
-  switch (vendor) {
-    case "anthropic":
-      return ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"];
-    case "openai":
-      return ["gpt-4o", "gpt-4o-mini", "o1", "o3-mini"];
-    case "google":
-      return ["gemini-2.0-flash", "gemini-2.0-pro", "gemini-1.5-pro"];
-    default:
-      return ["default"];
-  }
 }
