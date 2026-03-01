@@ -190,6 +190,66 @@ export function detectSubscriptions() {
 }
 
 /**
+ * Detect vendor and model from Claude Code session data.
+ * Reads the latest session JSONL in ~/.claude/projects/{encoded-path}/ and
+ * finds the most recent assistant message which contains { model: "..." }.
+ * @param {string} [projectRoot]
+ * @returns {{ vendor: string | null, model: string | null, version: string | null, sessionId: string | null }}
+ */
+export function detectClaudeCodeSession(projectRoot) {
+  const root = projectRoot || findProjectRoot();
+  const result = { vendor: null, model: null, version: null, sessionId: null };
+
+  try {
+    const resolvedRoot = fs.realpathSync(root);
+    const encodedPath = resolvedRoot.replace(/\//g, "-");
+    const claudeProjectDir = path.join(process.env.HOME || "", ".claude", "projects", encodedPath);
+
+    if (!fs.existsSync(claudeProjectDir)) return result;
+
+    // Find JSONL files sorted by modification time (newest first)
+    const entries = fs.readdirSync(claudeProjectDir)
+      .filter((f) => f.endsWith(".jsonl"))
+      .map((f) => ({ name: f, mtime: fs.statSync(path.join(claudeProjectDir, f)).mtimeMs }))
+      .sort((a, b) => b.mtime - a.mtime);
+
+    if (entries.length === 0) return result;
+
+    // Read the latest session file from the end to find the most recent assistant message
+    const filePath = path.join(claudeProjectDir, entries[0].name);
+    const content = fs.readFileSync(filePath, "utf-8");
+    const lines = content.trim().split("\n");
+
+    for (let i = lines.length - 1; i >= 0; i--) {
+      try {
+        const data = JSON.parse(lines[i]);
+        if (data.type === "assistant" && data.message?.model) {
+          result.model = data.message.model;
+          result.version = data.version || null;
+          result.sessionId = data.sessionId || null;
+
+          // Infer vendor from model name
+          if (result.model.startsWith("claude")) {
+            result.vendor = "anthropic";
+          } else if (result.model.startsWith("gpt") || result.model.startsWith("o1") || result.model.startsWith("o3")) {
+            result.vendor = "openai";
+          } else if (result.model.startsWith("gemini")) {
+            result.vendor = "google";
+          }
+          break;
+        }
+      } catch {
+        // skip unparseable lines
+      }
+    }
+  } catch {
+    // ignore errors (no Claude Code, permission issues, etc.)
+  }
+
+  return result;
+}
+
+/**
  * Run all detections and return a summary
  * @param {string} [projectRoot]
  */
@@ -201,6 +261,7 @@ export function detectAll(projectRoot) {
     mcpServers: detectMcpServers(root),
     claudeMd: detectClaudeMd(root),
     subscriptions: detectSubscriptions(),
+    claudeCodeSession: detectClaudeCodeSession(root),
   };
 }
 

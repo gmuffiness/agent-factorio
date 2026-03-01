@@ -2,67 +2,12 @@
  * agent-factorio push — Detect and push agent config to hub
  */
 import * as path from "path";
-import { ask, choose } from "../lib/prompt.mjs";
+import { choose } from "../lib/prompt.mjs";
 import { getDefaultOrg, readLocalConfig, writeLocalConfig, findProjectRoot } from "../lib/config.mjs";
 import { authApiCall } from "../lib/api.mjs";
 import { detectAll } from "../lib/detect.mjs";
 import { success, error, info, label, heading } from "../lib/log.mjs";
 
-/**
- * Infer vendor from detected subscriptions and environment
- * @param {{ name: string, detectionSource: string }[]} subscriptions
- * @returns {string | null}
- */
-function inferVendor(subscriptions) {
-  const subNames = subscriptions.map((s) => s.name);
-
-  // Claude Code or Anthropic API → anthropic
-  if (subNames.includes("Claude Code") || subNames.includes("Anthropic API")) {
-    return "anthropic";
-  }
-  // OpenAI API → openai
-  if (subNames.includes("OpenAI API")) {
-    return "openai";
-  }
-  // Cursor defaults to anthropic (most common), but could be openai
-  if (subNames.includes("Cursor")) {
-    return "anthropic";
-  }
-  // GitHub Copilot → openai
-  if (subNames.includes("GitHub Copilot")) {
-    return "openai";
-  }
-  // Windsurf → anthropic
-  if (subNames.includes("Windsurf")) {
-    return "anthropic";
-  }
-
-  return null;
-}
-
-/**
- * Infer model from vendor and environment
- * @param {string} vendor
- * @returns {string}
- */
-function inferModel(vendor) {
-  // Check environment variables
-  if (process.env.ANTHROPIC_MODEL) return process.env.ANTHROPIC_MODEL;
-  if (process.env.CLAUDE_MODEL) return process.env.CLAUDE_MODEL;
-  if (process.env.OPENAI_MODEL) return process.env.OPENAI_MODEL;
-
-  // Default to latest model per vendor
-  switch (vendor) {
-    case "anthropic":
-      return "claude-sonnet-4-6";
-    case "openai":
-      return "gpt-4o";
-    case "google":
-      return "gemini-2.0-flash";
-    default:
-      return "default";
-  }
-}
 
 export async function pushCommand() {
   // 1. Check login
@@ -97,29 +42,28 @@ export async function pushCommand() {
   const agentName = localConfig?.agentName || path.basename(projectRoot);
   label("Agent", localConfig?.agentName ? `${agentName} (saved)` : `${agentName} (auto)`);
 
-  // 4. Vendor — auto-detect from subscriptions, fall back to saved, then prompt
+  // 4. Vendor & Model — detect from Claude Code session, fall back to saved, then prompt
+  const session = detected.claudeCodeSession;
   let vendor;
-  if (localConfig?.vendor) {
-    vendor = localConfig.vendor;
-    label("Vendor", `${vendor} (saved)`);
-  } else {
-    vendor = inferVendor(detected.subscriptions);
-    if (vendor) {
-      label("Vendor", `${vendor} (auto-detected)`);
-    } else {
-      const vendorOptions = ["anthropic", "openai", "google"];
-      ({ value: vendor } = await choose("Vendor", vendorOptions));
-    }
-  }
-
-  // 5. Model — auto-detect from env/vendor, fall back to saved, then prompt
   let model;
-  if (localConfig?.model) {
+
+  if (session.vendor && session.model) {
+    vendor = session.vendor;
+    model = session.model;
+    label("Vendor", `${vendor} (session)`);
+    label("Model", `${model} (session)`);
+  } else if (localConfig?.vendor && localConfig?.model) {
+    vendor = localConfig.vendor;
     model = localConfig.model;
+    label("Vendor", `${vendor} (saved)`);
     label("Model", `${model} (saved)`);
   } else {
-    model = inferModel(vendor);
-    label("Model", `${model} (auto-detected)`);
+    const vendorOptions = ["anthropic", "openai", "google"];
+    if (!vendor) {
+      ({ value: vendor } = await choose("Vendor", vendorOptions));
+    }
+    const modelOptions = getModelOptions(vendor);
+    ({ value: model } = await choose("Model", modelOptions));
   }
 
   console.log();
@@ -200,4 +144,17 @@ export async function pushCommand() {
   }
 
   console.log(`\nDashboard: ${org.hubUrl}/org/${org.orgId}`);
+}
+
+function getModelOptions(vendor) {
+  switch (vendor) {
+    case "anthropic":
+      return ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"];
+    case "openai":
+      return ["gpt-4o", "gpt-4o-mini", "o1", "o3-mini"];
+    case "google":
+      return ["gemini-2.0-flash", "gemini-2.0-pro", "gemini-1.5-pro"];
+    default:
+      return ["default"];
+  }
 }
