@@ -39,6 +39,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // For /org/ routes: check public visibility BEFORE auth to avoid slow getUser() timeout
+  // (getUser() can timeout on expired sessions, causing 504 MIDDLEWARE_INVOCATION_TIMEOUT)
+  if (pathname.startsWith("/org/")) {
+    const orgId = pathname.split("/")[2];
+    if (orgId) {
+      const isPublic = await checkOrgIsPublic(orgId);
+      if (isPublic) {
+        return NextResponse.next();
+      }
+    }
+  }
+
   // Create Supabase client for session refresh
   let response = NextResponse.next({
     request: { headers: request.headers },
@@ -72,20 +84,11 @@ export async function middleware(request: NextRequest) {
   // Refresh session — MUST use getUser() for server-side validation
   const { data: { user } } = await supabase.auth.getUser();
 
-  // For /org/ routes: allow public orgs without auth, redirect private orgs to login
+  // Private /org/ routes — need auth
   if (pathname.startsWith("/org/")) {
     if (user) {
       return response;
     }
-    // Extract orgId from /org/[orgId]/...
-    const orgId = pathname.split("/")[2];
-    if (orgId) {
-      const isPublic = await checkOrgIsPublic(orgId);
-      if (isPublic) {
-        return NextResponse.next();
-      }
-    }
-    // Private org or invalid orgId — redirect to login
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
