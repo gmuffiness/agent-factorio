@@ -4,6 +4,8 @@ import { getSupabase } from "@/db/supabase";
 import AuthNav from "@/app/_components/AuthNav";
 import SearchBar from "./_components/SearchBar";
 
+export const dynamic = "force-dynamic";
+
 interface PublicOrg {
   id: string;
   name: string;

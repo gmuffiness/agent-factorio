@@ -3,6 +3,8 @@ import { getSupabase } from "@/db/supabase";
 import AuthNav from "./_components/AuthNav";
 import QuickstartTabs from "./_components/QuickstartTabs";
 
+export const dynamic = "force-dynamic";
+
 interface PublicOrg {
   id: string;
   name: string;
