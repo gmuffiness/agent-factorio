@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/stores/app-store";
+import type { AgentActivity } from "@/stores/app-store";
 import { formatCurrency, getVendorColor, cn } from "@/lib/utils";
 import { StatusBadge, VendorBadge } from "@/components/ui/Badge";
 import UsageBarChart from "@/components/charts/UsageBarChart";
@@ -186,7 +187,7 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
-type Tab = "overview" | "tools" | "context" | "usage";
+type Tab = "overview" | "tools" | "context" | "usage" | "activity";
 
 type PushServerStatus = "none" | "pending" | "completed";
 
@@ -199,6 +200,7 @@ export function AgentDrawer() {
   const getSelectedAgent = useAppStore((s) => s.getSelectedAgent);
   const selectedAgentId = useAppStore((s) => s.selectedAgentId);
   const currentOrgId = useAppStore((s) => s.currentOrgId);
+  const agentActivities = useAppStore((s) => s.agentActivities);
   const selectAgent = useAppStore((s) => s.selectAgent);
   const organization = useAppStore((s) => s.organization);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -339,11 +341,14 @@ export function AgentDrawer() {
     ? agent.usageHistory.reduce((sum, d) => sum + d.requests, 0)
     : 0;
 
-  const tabs: { id: Tab; label: string; count?: number }[] = [
+  const currentActivity: AgentActivity | null = agent ? (agentActivities[agent.id] ?? null) : null;
+
+  const tabs: { id: Tab; label: string; count?: number; live?: boolean }[] = [
     { id: "overview", label: "Overview" },
     { id: "tools", label: "Skills & Tools", count: agent ? agent.skills.length + agent.plugins.length + agent.mcpTools.length + (agent.resources?.length ?? 0) : 0 },
     { id: "context", label: "Context", count: agent?.context?.length ?? 0 },
     { id: "usage", label: "Usage" },
+    { id: "activity", label: "Activity", live: !!currentActivity },
   ];
 
   return (
@@ -493,6 +498,9 @@ export function AgentDrawer() {
                   )}
                 >
                   {tab.label}
+                  {tab.live && (
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                  )}
                   {tab.count !== undefined && (
                     <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
                       {tab.count}
@@ -810,6 +818,73 @@ export function AgentDrawer() {
                       <p className="text-sm text-slate-400">No context files registered.</p>
                       <p className="text-xs text-slate-400 mt-1">
                         Use <code className="bg-slate-100 px-1 rounded">agent-factorio push</code> to sync CLAUDE.md and other context.
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {activeTab === "activity" && (
+                <>
+                  {currentActivity ? (
+                    <div className="space-y-4">
+                      {/* Session Info */}
+                      <div>
+                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                          Active Session
+                        </h3>
+                        <div className="rounded-xl bg-green-50 border border-green-100 p-3 space-y-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                            <span className="text-green-700 font-medium">Live</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Session ID</span>
+                            <span className="text-slate-700 font-mono text-[10px] truncate max-w-[180px]">
+                              {currentActivity.sessionId}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Last event</span>
+                            <span className="text-slate-700 font-medium">{timeAgo(currentActivity.updatedAt)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Current Activity */}
+                      <div>
+                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                          Current Activity
+                        </h3>
+                        <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 space-y-2 text-xs">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="text-slate-400 shrink-0">Event</span>
+                            <span className="text-slate-700 font-medium text-right capitalize">
+                              {currentActivity.eventType.replace(/_/g, " ")}
+                            </span>
+                          </div>
+                          {currentActivity.toolName && (
+                            <div className="flex justify-between items-start gap-2">
+                              <span className="text-slate-400 shrink-0">Tool</span>
+                              <span className="text-blue-600 font-mono text-[10px] text-right">
+                                {currentActivity.toolName}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="text-slate-400 shrink-0">Activity</span>
+                            <span className="text-slate-700 text-right break-words max-w-[200px]">
+                              {currentActivity.currentActivity}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl bg-slate-50 p-6 text-center">
+                      <p className="text-sm text-slate-400">No active session.</p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Activity appears here when an agent session is running.
                       </p>
                     </div>
                   )}

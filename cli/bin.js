@@ -30,6 +30,7 @@ import { dirname, join } from "path";
 import { Command } from "commander";
 import { loginCommand } from "./commands/login.mjs";
 import { pushCommand } from "./commands/push.mjs";
+import { pullCommand } from "./commands/pull.mjs";
 import { statusCommand } from "./commands/status.mjs";
 import { whoamiCommand } from "./commands/whoami.mjs";
 import { logoutCommand } from "./commands/logout.mjs";
@@ -70,7 +71,10 @@ program
 program
   .command("push")
   .description("Detect and push agent configuration to the hub")
+  .option("--otel-endpoint <url>", "Configure OpenTelemetry endpoint URL")
   .action(pushCommand);
+
+pullCommand(program);
 
 program
   .command("status")

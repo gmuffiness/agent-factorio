@@ -6,7 +6,9 @@
  */
 import fs from "fs";
 import path from "path";
+import os from "os";
 import { spawn } from "child_process";
+import { randomUUID } from "crypto";
 
 const CONFIG_DIR = ".agent-factorio";
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
@@ -108,12 +110,18 @@ function main() {
       `[AgentFactorio] Connected to ${hubUrl} | Org: ${orgName} | Agent: ${agentName}\n`
     );
 
+    // Generate or reuse session ID for this Claude Code session
+    const sessionId =
+      process.env.CLAUDE_SESSION_ID ||
+      process.env.MCP_SESSION_ID ||
+      randomUUID();
+
     // Heartbeat: notify hub that this agent is active
     if (config.hubUrl && config.agentId) {
       fetch(`${config.hubUrl}/api/agents/${config.agentId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "active" }),
+        body: JSON.stringify({ status: "active", sessionId }),
       }).catch(() => {
         // Silently ignore heartbeat failures
       });
@@ -189,6 +197,66 @@ function main() {
           stdio: "ignore",
           env: { ...process.env, AF_PROJECT_ROOT: process.cwd() },
         });
+      }
+    }
+
+    // Resolve auth token: local config first, then global config
+    let authToken = config.authToken || null;
+    if (!authToken && config.orgId) {
+      try {
+        const globalConfigPath = path.join(os.homedir(), ".agent-factorio", "config.json");
+        if (fs.existsSync(globalConfigPath)) {
+          const globalConfig = JSON.parse(fs.readFileSync(globalConfigPath, "utf-8"));
+          const org = (globalConfig.organizations || []).find((o) => o.orgId === config.orgId);
+          if (org?.authToken) authToken = org.authToken;
+        }
+      } catch {
+        // ignore global config read failures
+      }
+    }
+
+    // Spawn activity daemon if auth token is available
+    if (authToken && config.orgId) {
+      const daemonPidFile = path.join("/tmp", `af-daemon-${config.agentId}.pid`);
+      let daemonAlive = false;
+      try {
+        if (fs.existsSync(daemonPidFile)) {
+          const pid = parseInt(fs.readFileSync(daemonPidFile, "utf-8").trim(), 10);
+          try {
+            process.kill(pid, 0);
+            daemonAlive = true;
+          } catch {
+            // stale PID
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      if (!daemonAlive) {
+        const daemonPath = path.join(
+          path.dirname(new URL(import.meta.url).pathname),
+          "activity-daemon.mjs"
+        );
+        if (fs.existsSync(daemonPath)) {
+          const daemonProc = spawn(
+            "node",
+            [
+              daemonPath,
+              config.agentId,
+              config.hubUrl,
+              authToken,
+              sessionId,
+              config.orgId,
+            ],
+            {
+              detached: true,
+              stdio: "ignore",
+              env: { ...process.env, AF_PROJECT_ROOT: process.cwd() },
+            }
+          );
+          daemonProc.unref();
+        }
       }
     }
   } catch {

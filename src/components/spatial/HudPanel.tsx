@@ -135,7 +135,9 @@ function RecentAgentPortrait({ agent, onClick }: { agent: Agent; onClick: () => 
 
 export default function HudPanel({ organization, orgId, recentAgentIds = [] }: HudPanelProps) {
   const selectAgent = useAppStore((s) => s.selectAgent);
+  const agentActivities = useAppStore((s) => s.agentActivities);
 
+  const liveCount = Object.keys(agentActivities).length;
   const allAgents = organization.departments.flatMap((d) => d.agents);
   const totalAgents = allAgents.length;
   const activeCount = allAgents.filter((a) => a.status === "active").length;
@@ -208,11 +210,27 @@ export default function HudPanel({ organization, orgId, recentAgentIds = [] }: H
         className="flex flex-col justify-center gap-1.5 px-5 h-full"
         style={{ width: 200, borderRight: "1px dashed #374151", flexShrink: 0 }}
       >
-        <div
-          className="text-amber-400 uppercase tracking-widest"
-          style={{ fontFamily: '"Press Start 2P", monospace', fontSize: "7px" }}
-        >
-          AGENTS
+        <div className="flex items-center gap-2">
+          <div
+            className="text-amber-400 uppercase tracking-widest"
+            style={{ fontFamily: '"Press Start 2P", monospace', fontSize: "7px" }}
+          >
+            AGENTS
+          </div>
+          {liveCount > 0 && (
+            <div className="flex items-center gap-1">
+              <span
+                className="inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse"
+                style={{ boxShadow: "0 0 4px #22c55e" }}
+              />
+              <span
+                className="text-green-400"
+                style={{ fontFamily: '"Press Start 2P", monospace', fontSize: "6px" }}
+              >
+                {liveCount} LIVE
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Active ratio */}

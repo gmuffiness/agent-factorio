@@ -85,6 +85,26 @@ export interface Agent {
   sub_agents?: Agent[];
   /** Whether this agent is a sub-agent of another agent */
   is_subagent?: boolean;
+  /** Current active Claude Code session UUID (null when idle) */
+  sessionId?: string | null;
+  /** What the agent is currently doing (e.g. "Reading src/main.ts") */
+  currentActivity?: string | null;
+  /** When currentActivity was last updated */
+  activityUpdatedAt?: string | null;
+}
+
+export type ActivityEventType = "session_start" | "session_end" | "tool_use" | "task_update" | "heartbeat";
+
+export interface ActivityEvent {
+  id: string;
+  agentId: string;
+  orgId: string;
+  sessionId: string;
+  eventType: ActivityEventType;
+  toolName: string | null;
+  taskDescription: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
 }
 
 export interface Department {
@@ -234,4 +254,105 @@ export interface OrgMember {
   status: OrgMemberStatus;
   avatarUrl: string;
   joinedAt: string;
+}
+
+// ── Zeude Integration Types ───────────────────────────────────────────────────
+
+export type HookEvent = "UserPromptSubmit" | "Stop" | "PreToolUse" | "PostToolUse" | "Notification";
+export type UsageEventType = "session_start" | "session_end" | "prompt" | "tool_use";
+
+export interface TeamStandardMcp {
+  id: string;
+  orgId: string;
+  name: string;
+  command: string;
+  args: string[];
+  env: Record<string, string>;
+  isGlobal: boolean;
+  status: string;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+export interface TeamStandardSkill {
+  id: string;
+  orgId: string;
+  name: string;
+  slug: string;
+  description: string;
+  content: string;
+  keywords: string[];
+  secondaryKeywords: string[];
+  isGlobal: boolean;
+  status: string;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+export interface TeamStandardHook {
+  id: string;
+  orgId: string;
+  name: string;
+  event: HookEvent;
+  description: string;
+  scriptContent: string;
+  scriptType: string;
+  env: Record<string, string>;
+  isGlobal: boolean;
+  status: string;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+export interface UsageEvent {
+  id: string;
+  agentId: string | null;
+  orgId: string;
+  eventType: UsageEventType;
+  tokensInput: number;
+  tokensOutput: number;
+  cost: number;
+  model: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface TeamConfig {
+  mcpServers: TeamStandardMcp[];
+  skills: TeamStandardSkill[];
+  hooks: TeamStandardHook[];
+  configVersion: string;
+  userId: string;
+  orgId: string;
+}
+
+export interface UsageStats {
+  totalEvents: number;
+  totalTokensInput: number;
+  totalTokensOutput: number;
+  totalCost: number;
+  byEventType: Record<string, number>;
+  byAgent: Record<string, number>;
+  byModel: Record<string, number>;
+  byDay: Array<{ date: string; count: number; tokensInput: number; tokensOutput: number; cost: number }>;
+}
+
+export interface SkillRule {
+  skillName: string;
+  keywords: string[];
+  secondaryKeywords: string[];
+  category: SkillCategory;
+}
+
+export interface SkillRulesConfig {
+  orgId: string;
+  rules: SkillRule[];
+  updatedAt: string;
+}
+
+export interface SkillSuggestion {
+  skillName: string;
+  confidence: number;
+  matchedKeywords: string[];
+  category: SkillCategory;
 }

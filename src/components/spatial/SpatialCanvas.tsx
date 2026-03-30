@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useCallback, useState } from "react";
 import { Application, Container, Graphics, Text, Texture, TextureSource } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 import { useAppStore } from "@/stores/app-store";
+import { useActivityStream } from "@/hooks/useActivityStream";
 import { createDepartmentRoom } from "./DepartmentRoom";
 import { createAgentAvatar, loadSpriteSheet, getCharTextures, resetSpriteSheet } from "./AgentAvatar";
 import { PlayerCharacter, type PlayerKeys, type RoomCollider } from "./PlayerCharacter";
@@ -514,7 +515,16 @@ export default function SpatialCanvas() {
   const [hoveredAgentId, setHoveredAgentId] = useState<string | null>(null);
   const dialogueOpenRef = useRef(false);
   const organization = useAppStore((s) => s.organization);
+  const currentOrgId = useAppStore((s) => s.currentOrgId);
+  const agentActivities = useAppStore((s) => s.agentActivities);
+  const fetchActiveSessions = useAppStore((s) => s.fetchActiveSessions);
   const [playerName, setPlayerName] = useState("Guest");
+
+  // Connect real-time activity stream and load initial state
+  useActivityStream(currentOrgId);
+  useEffect(() => {
+    if (currentOrgId) fetchActiveSessions(currentOrgId);
+  }, [currentOrgId, fetchActiveSessions]);
 
   // Fetch logged-in user's display name
   useEffect(() => {
@@ -555,6 +565,12 @@ export default function SpatialCanvas() {
   const mapTheme = useAppStore((s) => s.mapTheme);
   const getSelectedAgent = useAppStore((s) => s.getSelectedAgent);
   const selectedAgent = getSelectedAgent();
+
+  // Keep a ref so the Pixi ticker can read the latest activities without recreating the canvas
+  const agentActivitiesRef = useRef(agentActivities);
+  useEffect(() => {
+    agentActivitiesRef.current = agentActivities;
+  }, [agentActivities]);
 
   // Keyboard event handlers
   useEffect(() => {
@@ -714,6 +730,8 @@ export default function SpatialCanvas() {
       // Render departments and agents
       const avatarContainers: (Container & { _baseY: number; _agentStatus: string })[] = [];
       const agentPositionMap: { agent: Agent; x: number; y: number; container: Container }[] = [];
+      // Map from agentId -> activity Text label (for live updates in ticker)
+      const activityLabelMap = new Map<string, Text>();
 
       // Build room data with vendor colors for environment animations
       const roomsWithVendor = organization.departments.map((dept) => ({
@@ -769,6 +787,24 @@ export default function SpatialCanvas() {
             container: avatar,
           };
           agentPositionMap.push(posEntry);
+
+          // === Activity label (shown when agent has an active session) ===
+          const activityLabel = new Text({
+            text: "",
+            style: {
+              fontFamily: '"Press Start 2P", monospace',
+              fontSize: 5,
+              fill: "#00ff88",
+              wordWrap: true,
+              wordWrapWidth: 120,
+            },
+          });
+          activityLabel.anchor.set(0.5, 1);
+          activityLabel.x = 0;
+          activityLabel.y = -58; // above the speech bubble area
+          activityLabel.visible = false;
+          avatar.addChild(activityLabel);
+          activityLabelMap.set(agent.id, activityLabel);
 
           // === Drag-and-drop handlers ===
           avatar.eventMode = "static";
@@ -1003,13 +1039,31 @@ export default function SpatialCanvas() {
 
         // Agent idle/error animations (skip for currently-dragged avatar)
         const draggedAvatar = dragRef.current.active ? dragRef.current.avatar : null;
-        for (const avatar of avatarContainers) {
+        const activities = agentActivitiesRef.current;
+        for (const posEntry of agentPositionMap) {
+          const avatar = posEntry.container as Container & { _baseY: number; _agentStatus: string };
           if (avatar === draggedAvatar) continue;
           if (avatar._agentStatus === "active") {
             avatar.y = avatar._baseY + Math.sin(elapsed * 2.5 + avatar._baseY) * 3;
           } else if (avatar._agentStatus === "error") {
             const pulse = 0.85 + Math.sin(elapsed * 5) * 0.15;
             avatar.scale.set(pulse);
+          }
+
+          // Update activity label from live activities ref
+          const actLabel = activityLabelMap.get(posEntry.agent.id);
+          if (actLabel) {
+            const act = activities[posEntry.agent.id];
+            if (act) {
+              const raw = act.currentActivity || act.toolName || act.eventType;
+              const labelText = raw.length > 20 ? raw.slice(0, 19) + "\u2026" : raw;
+              if (actLabel.text !== labelText) actLabel.text = labelText;
+              actLabel.visible = true;
+              // Pulse opacity
+              actLabel.alpha = 0.7 + Math.sin(elapsed * 3) * 0.3;
+            } else {
+              actLabel.visible = false;
+            }
           }
         }
 

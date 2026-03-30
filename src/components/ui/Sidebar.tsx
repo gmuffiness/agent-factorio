@@ -119,6 +119,18 @@ const navItems = [
     ),
   },
   {
+    suffix: "/team-config",
+    label: "Team Config",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="3" width="16" height="3" rx="1" />
+        <rect x="2" y="9" width="16" height="3" rx="1" />
+        <rect x="2" y="15" width="16" height="3" rx="1" />
+        <path d="M14 4.5v1M14 10.5v1M14 16.5v1" strokeWidth="2" />
+      </svg>
+    ),
+  },
+  {
     suffix: "/settings",
     label: "Settings",
     icon: (

@@ -2,21 +2,40 @@
 
 [English](README.md) | [한국어](docs/README.ko.md)
 
-**All your team's agents, one place.** See who runs which agents, what skills and MCP tools they use, and how much it costs — across every team.
+**See your team's AI agents come alive.** A Gather.town-style dashboard where every agent — Claude Code, Cursor, Copilot, Codex — becomes a pixel avatar in your organization's virtual office.
 
-Every developer now runs multiple AI agents — Claude Code, Cursor, Codex — but as teams grow, nobody has the full picture. Who owns which agent? What skills and MCP tools does each department use? How much is it all costing? This information is scattered across local machines, git repos, and vendor consoles.
+<p align="center">
+  <a href="https://agent-factorio.vercel.app">
+    <img src="docs/images/spatial-map-hero.png" alt="AgentFactorio Spatial Map" width="800">
+  </a>
+  <br>
+  <strong><a href="https://agent-factorio.vercel.app">Try the live demo →</a></strong> (no signup required — explore the Bloom Cosmetics template)
+</p>
 
-AgentFactorio fixes this. Run `npx agent-factorio push` and your agent's config — git repo, MCP servers, skills, vendor & model — is auto-detected and registered to a central hub. Just as a company needs a staff directory when headcount grows, your organization needs an **agent directory** when agents grow.
+[![npm version](https://img.shields.io/npm/v/agent-factorio)](https://www.npmjs.com/package/agent-factorio)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-What makes it different: a **Gather.town-style 2D Spatial Map** that turns departments into rooms, agents into avatars, and skills into equipment — so you can see your entire AI fleet at a glance instead of staring at tables and charts.
+---
+
+## What You Get
+
+🗺️ **Spatial Map** — Departments are rooms. Agents are avatars. Walk around your AI workforce.
+
+📊 **Relationship Graph** — See how agents, skills, and MCP tools connect across the org.
+
+💰 **Cost Analytics** — Who's spending what, broken down by department and vendor.
+
+🎯 **Skill Catalog** — Discover what skills and MCP tools are popular across the team.
+
+💬 **Chat** — Talk to your agents through the dashboard.
+
+> **pixel-agents shows what YOUR agent does. AgentFactorio shows what your TEAM's agents do.**
 
 ---
 
 ## Quick Start
 
-### Option A: Tell your AI agent (Recommended)
-
-Tell your AI agent (Claude Code, Cursor, etc.) this prompt:
+### Tell your AI agent (Recommended)
 
 ```
 Read https://agent-factorio.vercel.app/setup.md and follow the instructions to join AgentFactorio
@@ -24,169 +43,122 @@ Read https://agent-factorio.vercel.app/setup.md and follow the instructions to j
 
 The agent will install the CLI, authenticate, and register itself automatically.
 
-### Option B: One-liner
-
-```bash
-curl -fsSL https://agent-factorio.vercel.app/install.sh | bash
-```
-
-Works on macOS & Linux. Installs Node.js (if needed) and the agent-factorio CLI, then starts login.
-
-### Option C: npm
+### Or use the CLI
 
 ```bash
 npm i -g agent-factorio
 agent-factorio login          # Email verification + create/join org
-agent-factorio push           # Register current project's agent to the hub
+agent-factorio push           # Auto-detects git, MCP servers, skills, CLAUDE.md
 ```
 
-`login` connects to the hub (default: `https://agent-factorio.vercel.app`), verifies your email, then lets you create a new org or join one with an invite code. `push` auto-detects your Git repo, MCP servers, skills, and CLAUDE.md.
+That's it. Your agent is now visible on the dashboard.
 
-### View the dashboard
+---
 
-After registration, manage agents visually:
-- Spatial map (Pixi.js) — departments = rooms, agents = avatars
-- Relationship graph (React Flow) — agent-skill-MCP connections
-- Agent table — CRUD + status monitoring
-- Cost analytics — per-department/agent usage charts
+## How It Works
 
-### Manage orgs & agents (CLI)
+```
+Developer A (Claude Code)  ──push──┐
+Developer B (Cursor)       ──push──┤──→  AgentFactorio Hub  ──→  Dashboard
+Developer C (Copilot)      ──push──┘     (Supabase DB)       (Spatial Map, Graph, Tables)
+```
+
+`agent-factorio push` auto-detects your agent's config — git repo, MCP servers, skills, vendor & model — and registers it to a central hub. Like a company staff directory, but for AI agents.
+
+---
+
+## Dashboard Pages
+
+| Page | What it shows |
+|---|---|
+| **Spatial Map** | Departments as rooms, agents as pixel avatars |
+| **Overview** | Top skills, MCP tools, featured agents, org stats |
+| **Graph** | Agent-skill-MCP connection visualization |
+| **Org Chart** | Department hierarchy |
+| **Agents** | Agent table with CRUD |
+| **Cost** | Per-department, per-vendor cost analytics |
+| **Skills** | Skill catalog with filters |
+| **Chat** | Agent conversations |
+
+---
+
+## CLI Commands
 
 ```bash
-# Organization management
-agent-factorio org list       # List your organizations
-agent-factorio org create     # Create a new organization
-agent-factorio org join       # Join via invite code
-agent-factorio org switch     # Change default organization
-agent-factorio org info       # Current org details
+# Organization
+agent-factorio org list|create|join|switch|info
 
-# Agent management
-agent-factorio agent list     # List agents in current org
-agent-factorio agent info     # Agent details
-agent-factorio agent edit     # Edit agent properties
-agent-factorio agent pull     # Sync from hub to local
-agent-factorio agent delete   # Delete an agent
+# Agents
+agent-factorio agent list|info|edit|pull|delete
 
 # Other
-agent-factorio status         # Current project registration status
-agent-factorio whoami         # Login info
-agent-factorio logout         # Log out
+agent-factorio status    # Registration status
+agent-factorio whoami    # Login info
+agent-factorio logout
 ```
 
 Full CLI manual: [docs/cli.md](docs/cli.md)
 
 ---
 
-## For AI Agents: Programmatic Setup
+## Self-Host
 
-> **Guide for LLM agents (Claude Code, Codex, etc.) to register via API.**
-> For humans using the CLI, follow the Quick Start above.
-
-### Register an agent to an existing organization
-
-**Required:** Hub URL, Invite code (6 chars), Agent name, Vendor & Model
+Deploy your own hub in 5 minutes:
 
 ```bash
-# 1. Join organization
+git clone https://github.com/gmuffiness/agent-factorio.git
+cd agent-factorio && pnpm install
+
+# Supabase
+npx supabase login && npx supabase link --project-ref <id> && npx supabase db push
+
+# Environment
+echo "NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co" > .env
+echo "SUPABASE_SERVICE_ROLE_KEY=your-key" >> .env
+
+pnpm dev  # http://localhost:3000
+```
+
+Production: Deploy to Vercel. See [docs/publishing.md](docs/publishing.md).
+
+---
+
+## For AI Agents
+
+> Guide for LLM agents (Claude Code, Codex, etc.) to register via API.
+
+<details>
+<summary>Programmatic registration</summary>
+
+```bash
+# 1. Join org
 curl -X POST {HUB_URL}/api/cli/login \
   -H "Content-Type: application/json" \
-  -d '{"action":"join","inviteCode":"{INVITE_CODE}","memberName":"{AGENT_NAME}","email":"{EMAIL}","userId":"{USER_ID}"}'
+  -d '{"action":"join","inviteCode":"{CODE}","memberName":"{NAME}","email":"{EMAIL}","userId":"{UID}"}'
 
 # 2. Register agent
 curl -X POST {HUB_URL}/api/cli/push \
   -H "Content-Type: application/json" \
-  -d '{
-    "agentName": "{AGENT_NAME}",
-    "vendor": "{VENDOR}",
-    "model": "{MODEL}",
-    "orgId": "{ORG_ID from step 1}",
-    "memberId": "{MEMBER_ID from step 1}",
-    "mcpTools": [{"name":"server-name","server":"server-name"}],
-    "context": [{"type":"claude-md","content":"...","sourceFile":".claude/CLAUDE.md"}]
-  }'
-
-# 3. Save config (.agent-factorio/config.json)
-mkdir -p .agent-factorio
-echo '{"hubUrl":"{HUB_URL}","orgId":"{ORG_ID}","agentId":"{AGENT_ID}","agentName":"{AGENT_NAME}","vendor":"{VENDOR}","model":"{MODEL}","pushedAt":"{ISO_TIMESTAMP}"}' > .agent-factorio/config.json
+  -d '{"agentName":"{NAME}","vendor":"{VENDOR}","model":"{MODEL}","orgId":"{ORG_ID}","memberId":"{MID}"}'
 ```
 
-**Auto-detected from project:**
-- Git repo URL: `git remote get-url origin`
-- MCP servers: `.claude/settings.local.json` → `mcpServers` keys
-- CLAUDE.md: `.claude/CLAUDE.md` or root `CLAUDE.md`
-- Skills: `.claude/commands/*.md`, `.claude/skills/**/*.md`
+Auto-detected: Git repo URL, MCP servers, CLAUDE.md, skills. See [docs/api-reference.md](docs/api-reference.md).
 
-**Update:** Include `agentId` in the request body to update an existing agent.
-
-API reference: [docs/api-reference.md](docs/api-reference.md)
+</details>
 
 ---
-
-## Self-host
-
-See [docs/publishing.md](docs/publishing.md) for the full deployment guide.
-
-```bash
-git clone https://github.com/gmuffiness/agent-factorio.git
-cd agent-factorio
-pnpm install
-
-# Supabase setup
-npx supabase login
-npx supabase link --project-ref <project-id>
-npx supabase db push
-
-# Create .env
-echo "NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co" > .env
-echo "SUPABASE_SERVICE_ROLE_KEY=your-service-role-key" >> .env
-
-pnpm dev   # http://localhost:3000
-```
-
-Production: Deploy to Vercel and set environment variables.
-
----
-
-## Dashboard Pages
-
-| Route | Description |
-|---|---|
-| `/org/[orgId]/overview` | Overview — top skills, MCP tools, featured agents, org stats |
-| `/org/[orgId]` | Spatial map — departments as rooms, agents as avatars |
-| `/org/[orgId]/graph` | Relationship graph — agents, skills, MCP tools as connected nodes |
-| `/org/[orgId]/org-chart` | Organization hierarchy chart |
-| `/org/[orgId]/agents` | Agent data table with CRUD |
-| `/org/[orgId]/departments` | Department data table with CRUD |
-| `/org/[orgId]/cost` | Cost analytics with pie/bar/trend charts |
-| `/org/[orgId]/skills` | Skill catalog with category filters |
-| `/org/[orgId]/chat` | Chat interface with agent conversations |
-| `/org/[orgId]/settings` | Organization settings & invite code |
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript 5 |
-| Styling | Tailwind CSS 4 |
-| State | Zustand 5 |
-| DB | Supabase (PostgreSQL) |
-| Spatial Canvas | Pixi.js 8 |
-| Graph View | React Flow 12 |
-| Charts | Recharts 3 |
-| CLI | Commander.js |
-| Deployment | Vercel |
+Next.js 16 · TypeScript · Tailwind CSS 4 · Zustand · Supabase · Pixi.js 8 · React Flow 12 · Recharts · Commander.js
+
+---
 
 ## Documentation
 
-| Doc | Description |
-|---|---|
-| [docs/cli.md](docs/cli.md) | Full CLI manual |
-| [docs/api-reference.md](docs/api-reference.md) | API endpoint reference |
-| [docs/architecture.md](docs/architecture.md) | Architecture & directory layout |
-| [docs/data-model.md](docs/data-model.md) | Data model reference |
-| [docs/vision.md](docs/vision.md) | Service positioning & vision |
-| [docs/publishing.md](docs/publishing.md) | npm/Vercel deployment guide |
+[CLI Manual](docs/cli.md) · [API Reference](docs/api-reference.md) · [Architecture](docs/architecture.md) · [Data Model](docs/data-model.md) · [Vision](docs/vision.md) · [Deployment](docs/publishing.md)
+
+---
 
 ## License
 

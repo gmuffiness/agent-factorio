@@ -20,6 +20,15 @@ import BudgetGauge from "@/components/charts/BudgetGauge";
 import SubscriptionBreakdown from "@/components/charts/SubscriptionBreakdown";
 import type { MonthlyCost, Vendor, ServiceCategory } from "@/types";
 
+interface AgentUsageStat {
+  agentId: string;
+  agentName: string;
+  vendor: Vendor;
+  eventCount: number;
+  totalTokens: number;
+  totalCost: number;
+}
+
 interface CostSummary {
   totalSubscriptionCost: number;
   byService: Array<{ serviceName: string; amount: number; memberCount: number }>;
@@ -34,11 +43,17 @@ export default function CostPage() {
   const getVendorCostBreakdown = useAppStore((s) => s.getVendorCostBreakdown);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [costSummary, setCostSummary] = useState<CostSummary | null>(null);
+  const [agentLeaderboard, setAgentLeaderboard] = useState<AgentUsageStat[]>([]);
 
   useEffect(() => {
     fetch(`/api/organizations/${orgId}/costs`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => { if (data) setCostSummary(data); })
+      .catch(() => {});
+
+    fetch(`/api/organizations/${orgId}/usage?period=month`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (data?.topAgents) setAgentLeaderboard(data.topAgents); })
       .catch(() => {});
   }, [orgId]);
 
@@ -508,6 +523,88 @@ export default function CostPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Agent Leaderboard (from usage API — tokens + cost this month) */}
+        {agentLeaderboard.length > 0 && (
+          <div className="rounded-xl bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Agent Leaderboard
+              <span className="ml-2 text-sm font-normal text-gray-400">by usage this month</span>
+            </h2>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-gray-500">
+                  <th className="pb-2">Rank</th>
+                  <th className="pb-2">Agent</th>
+                  <th className="pb-2">Vendor</th>
+                  <th className="pb-2 text-right">Total Tokens</th>
+                  <th className="pb-2 text-right">Total Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {agentLeaderboard.map((agent, i) => (
+                  <tr key={agent.agentId} className="border-b last:border-0">
+                    <td className="py-2 font-medium text-gray-500">{i + 1}</td>
+                    <td className="py-2 font-medium text-gray-900">{agent.agentName}</td>
+                    <td className="py-2">
+                      <span
+                        className="inline-block rounded-full px-2 py-0.5 text-xs font-medium text-white"
+                        style={{ backgroundColor: getVendorColor(agent.vendor) }}
+                      >
+                        {getVendorLabel(agent.vendor)}
+                      </span>
+                    </td>
+                    <td className="py-2 text-right text-gray-600">
+                      {agent.totalTokens.toLocaleString()}
+                    </td>
+                    <td className="py-2 text-right font-medium">
+                      {formatCurrency(agent.totalCost)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Department Comparison — horizontal bar chart */}
+        <div className="rounded-xl bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+            Department Comparison
+          </h2>
+          <ResponsiveContainer width="100%" height={Math.max(200, deptData.length * 48)}>
+            <BarChart data={deptData} layout="vertical" barSize={16}>
+              <XAxis
+                type="number"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(v) => `$${v}`}
+              />
+              <YAxis
+                type="category"
+                dataKey="name"
+                fontSize={12}
+                width={120}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+              <Bar dataKey="spend" radius={[0, 4, 4, 0]}>
+                {deptData.map((entry, index) => (
+                  <Cell
+                    key={`cmp-${index}`}
+                    fill={getVendorColor(entry.vendor)}
+                    fillOpacity={0.85}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <p className="mt-2 text-xs text-gray-400">
+            Colored by primary vendor. Showing monthly spend across all departments.
+          </p>
         </div>
       </div>
     </div>

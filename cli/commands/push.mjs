@@ -2,14 +2,38 @@
  * agent-factorio push — Detect and push agent config to hub
  */
 import * as path from "path";
+import * as fs from "fs";
+import * as os from "os";
 import { choose } from "../lib/prompt.mjs";
 import { getDefaultOrg, readLocalConfig, writeLocalConfig, findProjectRoot } from "../lib/config.mjs";
 import { authApiCall } from "../lib/api.mjs";
 import { detectAll } from "../lib/detect.mjs";
 import { success, error, info, label, heading } from "../lib/log.mjs";
 
+const AF_GLOBAL_DIR = path.join(os.homedir(), ".agent-factorio");
+const AF_GLOBAL_CONFIG = path.join(AF_GLOBAL_DIR, "config.json");
 
-export async function pushCommand() {
+
+export async function pushCommand(options = {}) {
+  // Handle --otel-endpoint option
+  if (options.otelEndpoint) {
+    try {
+      fs.mkdirSync(AF_GLOBAL_DIR, { recursive: true });
+      let globalConfig = {};
+      try {
+        globalConfig = JSON.parse(fs.readFileSync(AF_GLOBAL_CONFIG, "utf-8"));
+      } catch {
+        // start fresh if missing
+      }
+      globalConfig.otelEndpoint = options.otelEndpoint;
+      fs.writeFileSync(AF_GLOBAL_CONFIG, JSON.stringify(globalConfig, null, 2) + "\n");
+      info(`OTEL endpoint configured: ${options.otelEndpoint}`);
+    } catch (err) {
+      error(`Failed to save OTEL endpoint: ${err.message}`);
+      process.exit(1);
+    }
+  }
+
   // 1. Check login
   const org = getDefaultOrg();
   if (!org) {

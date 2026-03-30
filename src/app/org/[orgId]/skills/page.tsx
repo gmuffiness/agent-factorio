@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAppStore } from "@/stores/app-store";
 import { useOrgId } from "@/hooks/useOrgId";
@@ -26,8 +26,14 @@ const categories: Array<{ label: string; value: SkillCategory | "all" }> = [
 export default function SkillsPage() {
   const orgId = useOrgId();
   const organization = useAppStore((s) => s.organization);
+  const teamConfig = useAppStore((s) => s.teamConfig);
+  const fetchTeamConfig = useAppStore((s) => s.fetchTeamConfig);
   const [filter, setFilter] = useState<SkillCategory | "all">("all");
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchTeamConfig(orgId);
+  }, [orgId, fetchTeamConfig]);
 
   // Collect all unique skills with their agents and departments
   const skillMap = new Map<string, SkillEntry>();
@@ -70,6 +76,51 @@ export default function SkillsPage() {
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">Skill Catalog</h1>
         </div>
+
+        {/* Team Standard Skills */}
+        {teamConfig && teamConfig.skills.length > 0 && (
+          <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-gray-900">Team Standard Skills</h2>
+              <span className="rounded-full bg-amber-500 px-2.5 py-0.5 text-xs font-semibold text-white">
+                Team
+              </span>
+            </div>
+            <p className="mb-4 text-sm text-amber-700">
+              These skills are defined at the organization level and distributed to all agents.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {teamConfig.skills.map((skill) => (
+                <div
+                  key={skill.id}
+                  className="rounded-xl border border-amber-200 bg-white p-5 shadow-sm"
+                >
+                  <div className="mb-2 flex items-start justify-between gap-2">
+                    <h3 className="font-semibold text-gray-900">{skill.name}</h3>
+                    <span className="shrink-0 rounded-full bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white">
+                      Team
+                    </span>
+                  </div>
+                  {skill.description && (
+                    <p className="mb-3 text-xs text-gray-500">{skill.description}</p>
+                  )}
+                  {skill.keywords.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {skill.keywords.map((kw) => (
+                        <span
+                          key={kw}
+                          className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"
+                        >
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Category Filters */}
         <div className="flex flex-wrap gap-2">
@@ -131,6 +182,19 @@ export default function SkillsPage() {
                     </span>
                   ))}
                 </div>
+
+                {(entry.skill as Skill & { keywords?: string[] }).keywords?.length ? (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {(entry.skill as Skill & { keywords?: string[] }).keywords!.map((kw) => (
+                      <span
+                        key={kw}
+                        className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600"
+                      >
+                        {kw}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
 
                 {isExpanded && (
                   <div className="mt-4 border-t pt-3">

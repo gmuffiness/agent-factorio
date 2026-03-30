@@ -1,6 +1,15 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { useAppStore } from "@/stores/app-store";
 import { useOrgId } from "@/hooks/useOrgId";
 import { getVendorColor, getVendorLabel, cn } from "@/lib/utils";
@@ -9,6 +18,12 @@ import type { Agent } from "@/types";
 export default function OverviewPage() {
   const orgId = useOrgId();
   const organization = useAppStore((s) => s.organization);
+  const usageStats = useAppStore((s) => s.usageStats);
+  const fetchUsageStats = useAppStore((s) => s.fetchUsageStats);
+
+  useEffect(() => {
+    fetchUsageStats(orgId, "week");
+  }, [orgId, fetchUsageStats]);
 
   const allAgents: (Agent & { departmentName: string })[] =
     organization.departments.flatMap((d) =>
@@ -207,6 +222,90 @@ export default function OverviewPage() {
             </div>
           )}
         </div>
+
+        {/* Most Active Agents (from usage API) */}
+        {usageStats && Object.keys(usageStats.byAgent).length > 0 && (() => {
+          const agentEntries = Object.entries(usageStats.byAgent)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 5);
+          const maxCount = agentEntries[0]?.[1] || 1;
+          const allAgents = organization.departments.flatMap((d) => d.agents);
+          return (
+            <div className="rounded-xl bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">
+                Most Active Agents
+                <span className="ml-2 text-sm font-normal text-gray-400">last 7 days</span>
+              </h2>
+              <div className="space-y-3">
+                {agentEntries.map(([agentId, count], i) => {
+                  const agent = allAgents.find((a) => a.id === agentId);
+                  return (
+                    <div key={agentId} className="flex items-center gap-4">
+                      <span className="w-5 shrink-0 text-sm font-medium text-gray-400">
+                        {i + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-medium text-gray-900">
+                            {agent?.name ?? agentId.slice(0, 8)}
+                          </p>
+                          {agent && (
+                            <span
+                              className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium text-white"
+                              style={{ backgroundColor: getVendorColor(agent.vendor) }}
+                            >
+                              {getVendorLabel(agent.vendor)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1 h-1.5 w-full rounded-full bg-gray-100">
+                          <div
+                            className="h-1.5 rounded-full bg-blue-500"
+                            style={{ width: `${Math.min(100, (count / maxCount) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-sm text-gray-500">
+                        {count.toLocaleString()} events
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Activity Pulse — daily events (last 14 days) */}
+        {usageStats && usageStats.byDay.length > 0 && (
+          <div className="rounded-xl bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Activity Pulse
+              <span className="ml-2 text-sm font-normal text-gray-400">daily events</span>
+            </h2>
+            <ResponsiveContainer width="100%" height={140}>
+              <BarChart data={usageStats.byDay} barSize={12}>
+                <XAxis
+                  dataKey="date"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(v: string) => {
+                    const d = new Date(v);
+                    return `${d.getMonth() + 1}/${d.getDate()}`;
+                  }}
+                />
+                <YAxis hide />
+                <Tooltip
+                  formatter={(value: number | undefined) => [(value ?? 0).toLocaleString(), "Events"] as [string, string]}
+                  labelFormatter={(label: unknown) => new Date(String(label)).toLocaleDateString()}
+                  cursor={{ fill: "rgba(59,130,246,0.05)" }}
+                />
+                <Bar dataKey="count" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
     </div>
   );

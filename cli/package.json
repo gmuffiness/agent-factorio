@@ -1,6 +1,6 @@
 {
   "name": "agent-factorio",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "description": "CLI for AgentFactorio — AI Agent Fleet Management hub",
   "type": "module",
   "bin": {

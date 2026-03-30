@@ -55,3 +55,6 @@ next-env.d.ts
 # dev/research docs (internal only)
 docs/dev/
 docs/hackathon/
+
+# marketing materials (internal only, not for public repo)
+docs/marketing/

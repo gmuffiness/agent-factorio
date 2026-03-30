@@ -108,8 +108,10 @@ See [docs/api-reference.md](../docs/api-reference.md) for endpoint reference.
 - **All docs in `docs/` must be written in English** — Korean version is only at `docs/README.ko.md`
 - `docs/` — Public-facing documentation (cli, api-reference, architecture, data-model, vision, publishing, etc.)
 - `docs/dev/` — Internal dev notes, research, and analysis (gitignored, not published)
+- `docs/marketing/` — Marketing drafts, channel posts, strategy docs (gitignored, not published)
 - When writing new documentation, place it in `docs/` (English). For internal/research notes, use `docs/dev/`
 - **When the user asks to document or organize something into docs, create the file under `docs/`**
+- **Marketing content (post drafts, channel strategies, competitive analysis for marketing) must go in `docs/marketing/`** — never commit marketing materials to the public repo
 
 ### Chat API Keys (BYOK)
 - Chat requires an API key: **user personal key (localStorage) → org key (DB) → rejected**
